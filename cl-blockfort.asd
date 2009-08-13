@@ -11,7 +11,8 @@
   :components ((:module "src"
 			:components
 			((:file "package")
-			 (:file "files" :depends-on ("package"))
+			 (:file "conditions" :depends-on ("package"))
+			 (:file "files" :depends-on ("package" "conditions"))
 			 (:file "log" :depends-on ("files" "package"))
 			 (:file "heap" :depends-on ("log"))
 			 ;;(:file "sails" :depends-on ("package"))

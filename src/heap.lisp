@@ -38,6 +38,13 @@ starting HEAP-START bytes into the heap."))
     :initform nil :initarg :data-file
     :reader heap-data-file
     :documentation "The file that stores all the data")
+   (if-exists
+    :initform :open
+    :initarg :if-exists
+    :type (member :open :superesede :error)
+    :reader heap-if-exists
+    :documentation "What to do if the database exists already.  Can either open the database,
+report an error, or overwrite the database.")
    (transaction-log
     :initform nil :initarg :transaction-log
     :reader heap-transaction-log :reader heap-log
@@ -48,9 +55,10 @@ starting HEAP-START bytes into the heap."))
    (print-unreadable-object (heap stream :type t :identity t)
      (prin1 (heap-environment heap)  stream)))
 
-(defun open-heap (environment-dir)
+(defun open-heap (environment-dir &key (if-exists :open))
+  (declare (type (member :open :supersede :error) if-exists))
   (setf *heap*
-    (make-instance 'persistent-heap :heap-environment environment-dir)))
+    (make-instance 'persistent-heap :heap-environment environment-dir :if-exists if-exists)))
 
 (defun close-heap (heap)
   (heap-close heap))
@@ -76,15 +84,19 @@ starting HEAP-START bytes into the heap."))
 (defmethod initialize-instance :after ((heap persistent-heap) &rest args)
   (declare (ignore args))
 
-  (setf (slot-value heap 'data-file)
-	(make-instance 'binary-file
-		       :path (merge-pathnames (heap-environment heap) "db-data")
-		       :if-exists :overwrite))
+  (let ((file-if-exists (case (heap-if-exists heap)
+			  (:open :overwrite)
+			  (:error :error)
+			  (:supersede :supersede))))
+    (setf (slot-value heap 'data-file)
+	  (make-instance 'binary-file
+			 :path (merge-pathnames (heap-environment heap) "db-data")
+			 :if-exists file-if-exists))
 
-  (setf (slot-value heap 'transaction-log)
-	(make-instance 'transaction-log
-		       :path (merge-pathnames (heap-environment heap) "db-log")
-		       :db heap)))
+    (setf (slot-value heap 'transaction-log)
+	  (make-instance 'transaction-log
+			 :path (merge-pathnames (heap-environment heap) "db-log")
+			 :db heap))))
 
 (defmethod heap-close ((heap persistent-heap))
   (log-close (heap-transaction-log heap))
@@ -145,9 +157,10 @@ starting HEAP-START bytes into the heap."))
 ;  (:documentation "Undoes the modification to the database."))
 
 (defmethod db-element-as-octets ((heap persistent-heap) heap-range)
-  (concatenate 'vector
-	       (integer-to-octet-vector 4 (car heap-range))
-	       (integer-to-octet-vector 4 (cdr heap-range))))
+  (let ((array (make-array 8 :element-type '(unsigned-byte 8))))
+    (integer-into-octet-vector array 4 (car heap-range))
+    (integer-into-octet-vector array 4 (cdr heap-range) :start 4)
+    array))
 
 (defmethod db-element-from-octets ((heap persistent-heap) octets)
   (cons (octet-vector-to-integer (subseq octets 0 4))

@@ -18,8 +18,11 @@
   (is (null nil))
   t)
 
+(defun make-simple-array (seq)
+  (make-array (length seq) :element-type '(unsigned-byte 8) :initial-contents seq))
+
 (deftest heap-rw1 ()
-  (let ((data #(200 201 202 203 204 205 206 207)))
+  (let ((data (make-simple-array #(200 201 202 203 204 205 206 207))))
     ;; open it up once
     (let ((heap (open-heap "test/db1/")))
       (let ((transaction (heap-begin-transaction heap)))
@@ -29,14 +32,25 @@
       (is (equalp data (heap-read-n-byte-sequence heap (length data) :heap-start 0))))))
 
 (deftest heap-reopens ()
-  (let ((data #(200 201 202 203 204 205 206 207)))
+  (let ((data (make-simple-array #(200 201 202 203 204 205 206 207))))
     ;; open it up once
-    (let ((heap (open-heap "test/db1/")))
+    (let ((heap (open-heap "test/db1/" :if-exists :supersede)))
       (let ((transaction (heap-begin-transaction heap)))
 	(heap-write-sequence heap data :heap-start 0 :transaction transaction)
 	(heap-commit-transaction heap transaction))
       (heap-close heap))
     (let ((heap (open-heap "test/db1/")))
+      (is (equalp data (heap-read-n-byte-sequence heap (length data) :heap-start 0))))))
+
+(deftest heap-reopens-supercede ()
+  (let ((data (make-simple-array #(200 201 202 203 204 205 206 207))))
+    ;; open it up once
+    (let ((heap (open-heap "test/db1/" :if-exists :supersede)))
+      (let ((transaction (heap-begin-transaction heap)))
+	(heap-write-sequence heap data :heap-start 0 :transaction transaction)
+	(heap-commit-transaction heap transaction))
+      (heap-close heap))
+    (let ((heap (open-heap "test/db1/" :if-exists :supersede)))
       (is (equalp data (heap-read-n-byte-sequence heap (length data) :heap-start 0))))))
 
 (deftest recover-uncommitted ()
@@ -49,10 +63,10 @@
 6. Recover the database
 7. Check to make sure the data is data1 not data2"
 
-  (let ((data1 #(200 201 202 203 204 205 206 207))
-	(data2 #(100 101 102 103 104 105 106 107)))
+  (let ((data1 (make-simple-array #(200 201 202 203 204 205 206)))
+	(data2 (make-simple-array #(100 101 102 103 104 105 106))))
     ;; 
-    (let ((heap (open-heap "test/db1/")))
+    (let ((heap (open-heap "test/db1/" :if-exists :supersede)))
       (let ((transaction (heap-begin-transaction heap)))
 	(heap-write-sequence heap data1 :heap-start 0 :transaction transaction)
 	(heap-commit-transaction heap transaction))
@@ -64,4 +78,32 @@
       (blockfort::log-recover (blockfort::heap-log heap) heap)
       
       (is (equalp data1 (heap-read-n-byte-sequence heap (length data1) :heap-start 0)))
+      (heap-close heap))))
+
+(deftest recover-committed ()
+  "Open up a heap store,
+1. Begin Transaction 1
+2. put some data in from 0-7
+3. Commit Transaction 1
+4. Begin Transaction 2
+5. Put some data2 in from 0-7
+6. Recover the database
+7. Check to make sure the data is data1 not data2"
+
+  (let ((data1 (make-simple-array #(200 201 202 203 204 205 206)))
+	(data2 (make-simple-array #(100 101 102 103 104 105 106))))
+    ;; 
+    (let ((heap (open-heap "test/db1/" :if-exists :supersede)))
+      (let ((transaction (heap-begin-transaction heap)))
+	(heap-write-sequence heap data1 :heap-start 0 :transaction transaction)
+	(heap-commit-transaction heap transaction))
+      (is (equalp data1 (heap-read-n-byte-sequence heap (length data1) :heap-start 0)))
+      ;;
+      (let ((transaction (heap-begin-transaction heap)))
+	(heap-write-sequence heap data2 :heap-start 0 :transaction transaction)
+	(heap-commit-transaction heap transaction))
+
+      (blockfort::log-recover (blockfort::heap-log heap) heap)
+      
+      (is (equalp data2 (heap-read-n-byte-sequence heap (length data2) :heap-start 0)))
       (heap-close heap))))

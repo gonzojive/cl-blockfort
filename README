@@ -1,6 +1,7 @@
-This is a library for persistently storing data in a heap on disk(s).  It is intended as the main
-transactional workhorse behind a larger database project.  It handles all logging, concurrency control,
-etc.
+This is a library for persistently storing data in a heap/block/vector
+on disk(s).  It is intended as the main transactional workhorse behind
+a larger database project, the ACID underbelly.  It handles all
+logging, concurrency control, etc.
 
 
 Data in the heap is partitioned into 

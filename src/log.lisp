@@ -2,11 +2,23 @@
 
 ;;;;; db-level api to undo-redo logging
 
+(defparameter *todo-output* *standard-output*)
+
+(defun todo (format-control &rest format-args)
+  (apply 'format *todo-output* (format nil "TODO: ~A" format-control) format-args))
+
 (defclass transaction-log ()
   ((log-file
     :initarg :file
     :reader log-file
     :documentation "The binary file where the log is stored.")
+   (if-exists
+    :initform :open
+    :initarg :if-exists
+    :type (member :open :superesede :error)
+    :reader log-if-exists
+    :documentation "What to do if the log exists already.  Can either open the log,
+report an error, or replace the log.")
    (db
     :initarg :db
     :accessor log-db
@@ -22,8 +34,14 @@ TRANSACTION-LOG is thus block-store agnostic.")
   (:documentation "An undo-redo log for the transactional aspect of the persistent heap."))
 
 (defmethod initialize-instance :after ((log transaction-log) &key path)
-  (setf (slot-value log 'log-file) 
-	(make-instance 'binary-file :path path :if-exists :append)))
+  (let ((file-if-exists (case (log-if-exists log)
+			  (:open :append)
+			  (:error :error)
+			  (:supersede :supersede))))
+    (todo "Check to make sure that the log is not corrupted when first opening.")
+
+    (setf (slot-value log 'log-file) 
+	  (make-instance 'binary-file :path path :if-exists file-if-exists))))
 
 ;;; generic implemented by the log manager
 ;; FLUSH (v.) means that pending log entries are written to disk
@@ -83,7 +101,7 @@ MODIFICATION-LOG-ENTRY."))
     :documentation "The ID of the transaction.  This is written to the log."))
 
   (:documentation "A LOGGED-TRANSACTION can be subclassed by a user or used as is.  The only
-requirement of this object is that is supply a unique transaction that is not shared by any
+requirement of this object is that it supply a unique transaction that is not shared by any
 concurrently executing transaction."))
 
 (defclass single-transaction-log-entry (log-entry)
@@ -110,12 +128,12 @@ log entry must be created and flushed before that data is actually inserted into
 (defclass begin-transaction-log-entry (single-transaction-log-entry)
   ()
   (:documentation "Corresponds to the beginning of a transaction.  The only restriction is that
-it created and flushed before any write entry or commit entry is flushed."))
+it is created and flushed before any write entry or commit entry is flushed."))
 
 (defclass commit-transaction-log-entry (single-transaction-log-entry)
   ()
   (:documentation "Corresponds to the beginning of a transaction.  The only restriction is that
-it created and flushed before any write entry or commit entry is flushed."))
+it is flushed as soon as it appears in the log."))
 
 (defclass abort-transaction-log-entry (single-transaction-log-entry)
   ()
@@ -146,11 +164,23 @@ are running."))
 (defun integer-to-octet-vector (octet-count integer)
   "Given an integer and the number of bytes of desired output, returns a vector of lenghth
 BYTE-COUNT with a Little Endian integer in it."
+  (declare (optimize speed)
+	   (type integer integer)
+	   (type fixnum octet-count))
   (let ((array (make-array octet-count :element-type '(unsigned-byte 8))))
-    (dotimes (i octet-count)
-      (setf (elt array i)
-	    (ldb (byte 8 (* 8 i)) integer)))
-    array))
+    (integer-into-octet-vector array octet-count integer)))
+
+(defun integer-into-octet-vector (octet-vector octet-count integer &key (start 0))
+  "Given an integer and a byte vector, inserts OCTET-COUNT bytes into OCTET-VECTOR
+beginning START bytes from the first byte."
+  (declare (type integer integer)
+	   (type fixnum octet-count start)
+	   (type (simple-array (unsigned-byte 8)) octet-vector)
+	   (optimize (speed 3)))
+  (dotimes (i octet-count)
+    (setf (elt octet-vector (+ i start))
+	  (ldb (byte 8 (* 8 i)) integer)))
+  octet-vector)
 
 (defun octet-vector-to-integer (vector &optional signed?)
   "Given a byte vector in Little Endian form, returns a signed integer."
@@ -166,13 +196,22 @@ BYTE-COUNT with a Little Endian integer in it."
 (defconstant +field-size-octet-count+ 8
   "Number of bytes to use to store the size of each 'field' in a log entry.")
 
+(defconstant +checksum-octet-count+ 4
+  "Number of bytes to use to store the checksum of the data for a particular field.")
+
 (defun write-binary-field-to-log-stream (vector log-stream)
   "Writes a vector of octets to the stream LOG-STREAM.  Formatted with a leading binary
 byte count followed by the byte array."
-  (let ((length (length vector)))
-    (write-sequence (integer-to-octet-vector +field-size-octet-count+ length) log-stream)
+  (declare (optimize debug))
+  (let* ((length (length vector))
+	 (length-octets (integer-to-octet-vector +field-size-octet-count+ length))
+	 (crc (crc32 vector))
+	 (crc-octets (integer-to-octet-vector +checksum-octet-count+ crc)))
+    (format t "Writing field ~A ~A ~A~%" length vector crc-octets)
+    (write-sequence length-octets log-stream)
+    (write-sequence crc-octets log-stream)
     (write-sequence vector log-stream)
-    (+ +field-size-octet-count+ length)))
+    (+ +field-size-octet-count+ +checksum-octet-count+ length)))
 
 (defun read-binary-field-from-log-stream (log-stream)
   "Reads a vector of octets from the stream LOG-STREAM.  Reads however many bytes 
@@ -183,10 +222,17 @@ are encoded in the field."
 	     (when (not (= byte-count bytes-read))
 	       (error "Expected to read ~A bytes but read ~A" byte-count bytes-read))
 	     (values seq bytes-read))))
-    (let ((length (octet-vector-to-integer (read-vector +field-size-octet-count+))))
-      (values
-       (read-vector length)
-       (+ +field-size-octet-count+ length)))))
+    (let* ((length (octet-vector-to-integer (read-vector +field-size-octet-count+)))
+	   (crc-octets (read-vector +checksum-octet-count+))
+	   (data (read-vector length))
+	   (crc (octet-vector-to-integer crc-octets))
+	   (data-crc (crc32 data)))
+      (format t "Read field ~A ~A ~A~%" length data crc-octets)
+      (if (eql crc data-crc)
+	  (values
+	    data
+	    (+ +field-size-octet-count+ +checksum-octet-count+ length))
+	  (error "Checksum failed on field.  Expected ~A but got ~A" crc data-crc)))))
 
 (defun write-integer-field-to-log-stream (integer octet-count log-stream)
   "Writes an integer of a certain size from the log stream."
@@ -237,13 +283,15 @@ before all else."
 
 
 (defmethod write-log-entry :after ((log-entry single-transaction-log-entry) binary-stream)
+  "Writes the ID of the transaction to the stream for any single-transaction-log-entry."
   (write-integer-field-to-log-stream
    (transaction-id (log-entry-transaction log-entry))
    +transaction-id-octet-count+
    binary-stream))
 
 (defmethod write-log-entry :after ((log-entry modification-log-entry) binary-stream)
-  
+  "A modification writes (1) the database element, (2) the old value, and (3) the new value
+to the stream."
   (write-binary-field-to-log-stream
    (db-element-as-octets
     (log-db (log-entry-transaction-log log-entry)) 
