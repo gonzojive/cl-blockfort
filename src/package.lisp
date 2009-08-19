@@ -6,8 +6,18 @@
    #:with-transaction
    ;; classes
    #:persistent-heap
+   ;; conditions
+   #:blockfort-condition
+   #:heap-error
+   #:heap-access-error
+   #:read-sequence-error
    ;;; heap operations
-   #:open-heap #:heap-close #:heap-read-sequence #:heap-write-sequence #:heap-environment
+   #:open-heap
+   #:heap-close
+   #:heap-read-sequence
+   #:heap-read-n-byte-sequence
+   #:heap-write-sequence
+   #:heap-environment
    #:heap-expand
    #:heap-size
    #:heap-begin-transaction #:heap-commit-transaction #:heap-rollback-transaction
