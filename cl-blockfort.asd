@@ -11,13 +11,14 @@
   :components ((:module "src"
 			:components
 			((:file "package")
+			 (:file "crc" :depends-on ("package"))
 			 (:file "conditions" :depends-on ("package"))
 			 (:file "files" :depends-on ("package" "conditions"))
-			 (:file "log" :depends-on ("files" "package"))
+			 (:file "log" :depends-on ("files" "package" "crc"))
 			 (:file "heap" :depends-on ("log"))
 			 ;;(:file "sails" :depends-on ("package"))
 	       )))
-  :depends-on ())
+  :depends-on ("bordeaux-threads"))
 
 (defsystem cl-blockfort-tests
   :components ((:module "test"

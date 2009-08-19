@@ -110,6 +110,15 @@ report an error, or overwrite the database.")
     (file-position stream heap-start)
     (read-sequence sequence stream :start start :end end)))
 
+(defun heap-read-n-byte-sequence (heap n &key heap-start)
+  "Reads N bytes from HEAP starting at HEAP-START (or 0 if heap start is not defined.  Returns
+the sequence.  Ensures that exactly N bytes are read."
+  (let* ((seq (make-array n :element-type '(unsigned-byte 8)))
+	 (num-bytes-read (heap-read-sequence heap seq :heap-start heap-start)))
+    (when (not (= n num-bytes-read))
+      (signal (make-condition 'read-sequence-error :heap heap)))
+    seq))
+
 (defmethod heap-write-sequence ((heap persistent-heap) sequence &key heap-start (start 0) end transaction)
   "Writes a byte sequence to the heap starting at offset HEAP-START"
   (declare (optimize debug))

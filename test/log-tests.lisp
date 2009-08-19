@@ -8,11 +8,6 @@
       (setf (elt vector i) (random 255)))
     vector))
 
-(defun heap-read-n-byte-sequence (heap n &key heap-start)
-  (let ((seq (random-byte-vector n)))
-    (heap-read-sequence heap seq :heap-start heap-start)
-    seq))
-
 (deftest testing-environment-works ()
   (is (= 5 5))
   (is (null nil))
@@ -51,7 +46,9 @@
 	(heap-commit-transaction heap transaction))
       (heap-close heap))
     (let ((heap (open-heap "test/db1/" :if-exists :supersede)))
-      (is (equalp data (heap-read-n-byte-sequence heap (length data) :heap-start 0))))))
+      (is (eql 'does-raise-error
+	       (handler-case (heap-read-n-byte-sequence heap (length data) :heap-start 0)
+		 (read-sequence-error () 'does-raise-error)))))))
 
 (deftest recover-uncommitted ()
   "Open up a heap store,

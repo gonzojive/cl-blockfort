@@ -1,5 +1,39 @@
 (in-package :blockfort)
 
+;;; utility
+(defun integer-to-octet-vector (octet-count integer)
+  "Given an integer and the number of bytes of desired output, returns a vector of lenghth
+BYTE-COUNT with a Little Endian integer in it."
+  (declare (optimize speed)
+	   (type integer integer)
+	   (type fixnum octet-count))
+  (let ((array (make-array octet-count :element-type '(unsigned-byte 8))))
+    (integer-into-octet-vector array octet-count integer)))
+
+(defun integer-into-octet-vector (octet-vector octet-count integer &key (start 0))
+  "Given an integer and a byte vector, inserts OCTET-COUNT bytes into OCTET-VECTOR
+beginning START bytes from the first byte."
+  (declare (type integer integer)
+	   (type fixnum octet-count start)
+	   (type (simple-array (unsigned-byte 8)) octet-vector)
+	   (optimize (speed 3)))
+  (dotimes (i octet-count)
+    (setf (elt octet-vector (+ i start))
+	  (ldb (byte 8 (* 8 i)) integer)))
+  octet-vector)
+
+(defun octet-vector-to-integer (vector &optional signed?)
+  "Given a byte vector in Little Endian form, returns a signed integer."
+  (let ((unsigned-value 0))
+    (dotimes (i (length vector))
+      (incf unsigned-value (ash (elt vector i) (* 8 i))))
+    (if (and signed?
+	     (>= unsigned-value (ash 1 (1- (* 8 (length vector))))))
+	(- unsigned-value (ash 1 (* 8 (length vector))))
+	unsigned-value)))
+
+
+
 ;;;;; db-level api to undo-redo logging
 
 (defparameter *todo-output* *standard-output*)
@@ -60,8 +94,8 @@ TRANSACTION-LOG is thus block-store agnostic.")
   (:documentation "Logs a modification to the database element."))
 
 (defgeneric log-recover (transaction-log database)
-  (:documentation "Recovers the log to the last consistent state.  That is, it undoes all uncommited transaction
-and redoes any committed transactions."))
+  (:documentation "Recovers the log to the last consistent state.  That is, it undoes all uncommited transactions
+and redoes all committed transactions."))
 
 (defgeneric log-close (transaction-log)
   (:documentation "Close all the associated log files."))
@@ -160,38 +194,6 @@ are running."))
 (defgeneric write-log-entry (log-entry stream)
   (:documentation "Writes the given log entry to the stream STREAM."))
 
-
-(defun integer-to-octet-vector (octet-count integer)
-  "Given an integer and the number of bytes of desired output, returns a vector of lenghth
-BYTE-COUNT with a Little Endian integer in it."
-  (declare (optimize speed)
-	   (type integer integer)
-	   (type fixnum octet-count))
-  (let ((array (make-array octet-count :element-type '(unsigned-byte 8))))
-    (integer-into-octet-vector array octet-count integer)))
-
-(defun integer-into-octet-vector (octet-vector octet-count integer &key (start 0))
-  "Given an integer and a byte vector, inserts OCTET-COUNT bytes into OCTET-VECTOR
-beginning START bytes from the first byte."
-  (declare (type integer integer)
-	   (type fixnum octet-count start)
-	   (type (simple-array (unsigned-byte 8)) octet-vector)
-	   (optimize (speed 3)))
-  (dotimes (i octet-count)
-    (setf (elt octet-vector (+ i start))
-	  (ldb (byte 8 (* 8 i)) integer)))
-  octet-vector)
-
-(defun octet-vector-to-integer (vector &optional signed?)
-  "Given a byte vector in Little Endian form, returns a signed integer."
-  (let ((unsigned-value 0))
-    (dotimes (i (length vector))
-      (incf unsigned-value (ash (elt vector i) (* 8 i))))
-    (if (and signed?
-	     (>= unsigned-value (ash 1 (1- (* 8 (length vector))))))
-	(- unsigned-value (ash 1 (* 8 (length vector))))
-	unsigned-value)))
-
 ;; logging details
 (defconstant +field-size-octet-count+ 8
   "Number of bytes to use to store the size of each 'field' in a log entry.")
@@ -207,7 +209,7 @@ byte count followed by the byte array."
 	 (length-octets (integer-to-octet-vector +field-size-octet-count+ length))
 	 (crc (crc32 vector))
 	 (crc-octets (integer-to-octet-vector +checksum-octet-count+ crc)))
-    (format t "Writing field ~A ~A ~A~%" length vector crc-octets)
+    ;(format t "Writing field ~A ~A ~A~%" length vector crc-octets)
     (write-sequence length-octets log-stream)
     (write-sequence crc-octets log-stream)
     (write-sequence vector log-stream)
@@ -227,7 +229,7 @@ are encoded in the field."
 	   (data (read-vector length))
 	   (crc (octet-vector-to-integer crc-octets))
 	   (data-crc (crc32 data)))
-      (format t "Read field ~A ~A ~A~%" length data crc-octets)
+      ;(format t "Read field ~A ~A ~A~%" length data crc-octets)
       (if (eql crc data-crc)
 	  (values
 	    data
@@ -397,6 +399,10 @@ before all else."
   (setf (unflushed-log-entries log) nil))
 
 
+;; A note on recovery form page 905 of Database Systems: The Complete Book:
+;; The undo/redo recover policy is:
+;; 1. Redo all the committed transactions in the order earliest-first, and
+;; 2. undo all the incomplete transactions in the order latest-first
 (defmethod log-recover ((log transaction-log) database)
   ;; loop through each log record.  When a 'begin' log entry is found,
   ;; push a transaction onto the stack.  coupled with that entry,
