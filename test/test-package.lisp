@@ -9,3 +9,5 @@
 
 (in-suite cl-blockfort-tests)
 
+(defparameter *test-directory-pathname*
+  (asdf:component-pathname (asdf:find-component (asdf:find-system :cl-blockfort-tests) "test")))

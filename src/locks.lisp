@@ -72,7 +72,8 @@ ACCESS-TYPE is presumably :shared or :exclusive. "))
 (defmethod release-shared-lock ((lock shared-lock) (access-type (eql :shared)))
   "Release a shared lock."
   (bordeaux-threads:with-lock-held ((system-lock lock))
-    ;; decrease the lock count and notify others that the exlclusive lock is available, if necessary
+    ;; decrease the lock count and notify others that the exlclusive
+    ;; lock is available, if necessary
     (decf (shared-count lock))
     (when (= 0 (shared-count lock))
       (bordeaux-threads:condition-notify (exclusively-available-condv lock)))))
@@ -80,7 +81,8 @@ ACCESS-TYPE is presumably :shared or :exclusive. "))
 (defmethod release-shared-lock ((lock shared-lock) (access-type (eql :exclusive)))
   "Release an exclusive lock."
   (bordeaux-threads:with-lock-held ((system-lock lock))
-    ;; decrease the lock count and notify others that the exlclusive lock is available, if necessary
+    ;; decrease the lock count and notify others that the exlclusive
+    ;; lock is available, if necessary
     (setf (exclusive-lock-heldp lock) nil)
     (bordeaux-threads:condition-notify (exclusively-available-condv lock))))
 
@@ -92,5 +94,5 @@ and returns."
     `(let ((,lock-var ,lock)
 	   (,access-type-var ,access-type))
        (acquire-shared-lock ,lock-var ,access-type-var)
-       (unwind-protect (release-shared-lock ,lock-var ,access-type-var)
-	 ,@body))))
+       (unwind-protect (progn ,@body)
+	 (release-shared-lock ,lock-var ,access-type-var)))))

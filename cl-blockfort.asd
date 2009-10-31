@@ -11,12 +11,14 @@
   :components ((:module "src"
 			:components
 			((:file "package")
-			 (:file "crc" :depends-on ("package"))
 			 (:file "conditions" :depends-on ("package"))
+			 (:file "locks" :depends-on ("package"))
+			 (:file "crc" :depends-on ("package"))
+
 			 (:file "files" :depends-on ("package" "conditions"))
 			 (:file "log" :depends-on ("files" "package" "crc"))
 			 (:file "heap" :depends-on ("log"))
-			 ;;(:file "sails" :depends-on ("package"))
+
 	       )))
   :depends-on ("bordeaux-threads"))
 
@@ -24,5 +26,6 @@
   :components ((:module "test"
                         :components ((:file "test-package")
 				     (:file "log-tests" :depends-on ("test-package"))
+				     (:file "locks-tests" :depends-on ("test-package"))
 				     )))
   :depends-on ("cl-blockfort" "stefil"))

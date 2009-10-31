@@ -1,6 +1,10 @@
 (in-package :bfort-tests)
 (in-suite cl-blockfort-tests)
 
+(defparameter *test-db1-pathname*
+  (merge-pathnames "db1/" *test-directory-pathname*))
+
+
 ;; utilities
 (defun random-byte-vector (length)
   (let ((vector (make-array length :element-type '(unsigned-byte 8))))
@@ -19,7 +23,7 @@
 (deftest heap-rw1 ()
   (let ((data (make-simple-array #(200 201 202 203 204 205 206 207))))
     ;; open it up once
-    (let ((heap (open-heap "test/db1/")))
+    (let ((heap (open-heap *test-db1-pathname*)))
       (let ((transaction (heap-begin-transaction heap)))
 	(heap-write-sequence heap data :heap-start 0 :transaction transaction)
 	(is (equalp data (heap-read-n-byte-sequence heap (length data) :heap-start 0)))
@@ -29,23 +33,23 @@
 (deftest heap-reopens ()
   (let ((data (make-simple-array #(200 201 202 203 204 205 206 207))))
     ;; open it up once
-    (let ((heap (open-heap "test/db1/" :if-exists :supersede)))
+    (let ((heap (open-heap *test-db1-pathname* :if-exists :supersede)))
       (let ((transaction (heap-begin-transaction heap)))
 	(heap-write-sequence heap data :heap-start 0 :transaction transaction)
 	(heap-commit-transaction heap transaction))
       (heap-close heap))
-    (let ((heap (open-heap "test/db1/")))
+    (let ((heap (open-heap *test-db1-pathname*)))
       (is (equalp data (heap-read-n-byte-sequence heap (length data) :heap-start 0))))))
 
 (deftest heap-reopens-supercede ()
   (let ((data (make-simple-array #(200 201 202 203 204 205 206 207))))
     ;; open it up once
-    (let ((heap (open-heap "test/db1/" :if-exists :supersede)))
+    (let ((heap (open-heap *test-db1-pathname* :if-exists :supersede)))
       (let ((transaction (heap-begin-transaction heap)))
 	(heap-write-sequence heap data :heap-start 0 :transaction transaction)
 	(heap-commit-transaction heap transaction))
       (heap-close heap))
-    (let ((heap (open-heap "test/db1/" :if-exists :supersede)))
+    (let ((heap (open-heap *test-db1-pathname* :if-exists :supersede)))
       (is (eql 'does-raise-error
 	       (handler-case (heap-read-n-byte-sequence heap (length data) :heap-start 0)
 		 (read-sequence-error () 'does-raise-error)))))))
@@ -63,7 +67,7 @@
   (let ((data1 (make-simple-array #(200 201 202 203 204 205 206)))
 	(data2 (make-simple-array #(100 101 102 103 104 105 106))))
     ;; 
-    (let ((heap (open-heap "test/db1/" :if-exists :supersede)))
+    (let ((heap (open-heap *test-db1-pathname* :if-exists :supersede)))
       (let ((transaction (heap-begin-transaction heap)))
 	(heap-write-sequence heap data1 :heap-start 0 :transaction transaction)
 	(heap-commit-transaction heap transaction))
@@ -90,7 +94,7 @@
   (let ((data1 (make-simple-array #(200 201 202 203 204 205 206)))
 	(data2 (make-simple-array #(100 101 102 103 104 105 106))))
     ;; 
-    (let ((heap (open-heap "test/db1/" :if-exists :supersede)))
+    (let ((heap (open-heap *test-db1-pathname* :if-exists :supersede)))
       (let ((transaction (heap-begin-transaction heap)))
 	(heap-write-sequence heap data1 :heap-start 0 :transaction transaction)
 	(heap-commit-transaction heap transaction))
