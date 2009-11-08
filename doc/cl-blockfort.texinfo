@@ -1,0 +1,154 @@
+\input texinfo
+@setfilename internals.texinfo
+@settitle Blockfort
+
+@copying
+Copyright @copyright{} 2007 Red Daly
+@end copying
+
+@titlepage
+@title Blockfort
+
+@c The following two commands start the copyright page.
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@c Output the table of contents at the beginning.
+@contents
+
+@ifnottex
+
+@node Top
+@top Blockfort
+@insertcopying
+@end ifnottex
+     
+@chapter Introduction
+Blockfort is a low-level transactional data store programmed in Common
+Lisp and intended for use by more abstract database systems.
+Blockfort guarantees ACID transactions, meaning the following
+properties of a transaction always hold:
+
+@enumerate
+@item Atomicity
+-- The transaction executes either all or none of its operations.
+
+@item Consistency
+-- The database is in a ``consistent'' state before and after the
+transaction executes.
+
+@item Isolation
+ -- Concurrent transactions appear to be executing one after another,
+and they do not reflect intermediate changes made by each other.
+
+@item Durability
+ -- After a transaction has successfully committed, the database will
+reflect its changes.
+@end enumerate
+
+To accomplish ACID compliance, Blockfort relies on two basic
+principles: transaction logging for recovering from failures, and a
+concurrency scheduler for dealing with concurrently-executing
+transactions.  How ACID compliance is achieved in light of the rather
+agnostic nature of Blockfort in regards to the higher-level structure
+of its data should become clear after reading about blocks,
+concurrency control, and the interface between the two in Blockfort.
+
+@section Blocks
+Blocks are the basic unit of data in Blockfort, and the interface
+for dealing with them is raw and full of arithmetic.  A block is a
+vector of contiguous (binary) data, stored on disk as such.  The
+interface to Blockfort does not assume a page size or place any extra
+metadata into blocks when they are stored on the disk.
+
+Blockfort maintains the block-store in a file, or multiple files, in a
+single directory on the disk and uses Common Lisp's routines to
+perform I/O operations.  In addition to the data file(s), there is
+also a small amount of metadata associated with each database that is
+stored in separate files in the directory.  These files store the
+version of the database and other transient information to protect the
+database from multiple processes. There are also transaction logs that
+take up a significant amount of space and are used to back up and
+recover the database.  Users do not need to know about the format of
+any of these files.
+
+A common implementation of BTrees is to allocate one 4 kilobyte block
+for each node in the tree.  An application that wished to implement
+BTrees using Blockfort would be required to serialize its in-memory
+representation of a node into a binary block of that size and then
+make a call to @code{persistent-alloc / persistent-write-sequence}.
+The application would also need to deserialize the binary block it
+received from a call to @code{persistent-read-sequence}.
+
+@code{persistent-alloc} finds a contiguouse place in the block-store
+that can safely be written to without damaging any of the
+application's data.  No garbage collector is supplied, but the
+application controls the semantics of reads and writes on regions of
+the persistent vector, including which regions are reusable.
+
+@code{persistent-write-sequence} is like Common Lisp's
+@code{write-sequence} except it operates on a persistent block-store.
+The same is true for @code{persistent-read-sequence}.
+
+Of course, this is not the full story.  The concurrency mechanism
+interacts with how blocks are read and written in the database
+extensively, and the BTree in the example must set up the store to
+handle its semantics.
+
+@section Concurrency control
+Blockfort currently allows concurrency at the level of a single lisp
+process.  That means that many threads in a single Common Lisp image
+can execute transactions simultaneously.
+
+Multiple processes/lisp images cannot use the same database at once,
+though adding that functionality is not a fundamental limitation.  It
+would simply require a communication layer for each concurrency
+scheme, and we view that an exercise in tedium.
+
+At present, there is a generic concurrency interface and a lock-based
+implemenation with its own additional semantics.  In order to
+implement anything at present it is necessary to interface with the
+lock-based scheduler and supply information about the semantics of the
+locking scheme desired for various blocks.
+
+@subsection Lock-based concurrency of BTrees
+Btrees are a common, multipurpose data structure and Blockfort
+attempts to accomodate the concurrency needs of a BTree so that it may
+be implemented efficiently.
+
+When BTrees add an element, the tree is traversed to decide where the
+new element belongs given the ordering of the btree.  Once it is
+determined where the element belongs, the value is either inserted
+into a non-full node, or a node is split and a separation value is
+inserted into the parent of the split node.  Once a non-empty node is
+seen in the search down the tree for the correct insertion location,
+it is known that insertion will not result in a separation value being
+placed inside the parent node.
+
+In the case of deletion, if a node is traversed with more than the
+minimum number of elements, then we can be sure that it will not be
+necessary to restructure the parent.  (See Database Systems, page
+964).
+
+The locking scheme that results for tree structures like this is a a
+protocol where
+
+@enumerate
+@item
+A transaction's first lock may be any node in the tree.
+@item
+To lock a new node, its parent must be locked.
+@item
+Any node can be unlocked at any time.
+@item
+A transaction may not relock a node which was previously locked and unlocked.
+@end enumerate
+
+@section Logging
+Logging allows the database to recover from a crash or aborted
+transaction.  Currently the logging scheme used by blockfort is
+undo-redo logging.
+
+@bye

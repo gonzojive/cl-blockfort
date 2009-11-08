@@ -6,19 +6,30 @@
 (defclass binary-file ()
   ((path
     :initarg :path :initarg :path :accessor binary-file-path
-    :documentation "The pathname of the file.")
-   (stream
-    :initarg :stream :accessor binary-file-stream
-    :documentation "File stream of the open binary file, or nil if it is not open.")))
+    :documentation "The pathname of the file."))
+  (:documentation "Thread-safe access to binary file io streams."))
 
-(defmethod initialize-instance :after ((file binary-file) &key (if-does-not-exist :create) (if-exists :new-version))
-  "Open up the binary stream associated with the given file."
-  (setf (binary-file-stream file)
-	(open (binary-file-path file)
-	      :direction :io
-	      :element-type '(unsigned-byte 8)
-	      :if-exists if-exists
-	      :if-does-not-exist if-does-not-exist)))
+(defun binary-file-stream (binary-file)
+  "Maps a binary file to an open stream that the current thread may
+use to access the binary file's contents."
+  (let ((file->stream (or (thread-local-binding file->stream)
+			  (setf (thread-local-binding file->stream)
+				(make-hash-table)))))
+    (or (gethash binary-file file->stream)
+	(setf (gethash binary-file file->stream)
+	      (open-thread-local-stream binary-file :if-exists :overwrite)))))
 
-(defmethod close-file ((bf binary-file))
-  (close (binary-file-stream bf)))
+(defun open-thread-local-stream (binary-file &key if-exists if-does-not-exist)
+  "Opens a new stream in the current thread for the given binary file and sets up
+for garbage collection later in life."
+  (let ((stream (open (binary-file-path binary-file)
+		      :direction :io
+		      :element-type '(unsigned-byte 8)
+		      :if-exists if-exists
+		      :if-does-not-exist if-does-not-exist)))
+    (trivial-garbage:finalize (bordeaux-threads:current-thread)
+			      #'(lambda () (close stream)))
+    stream))
+
+;(defmethod close-file ((bf binary-file))
+;  (close (binary-file-stream bf)))

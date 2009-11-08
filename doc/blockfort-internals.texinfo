@@ -1,0 +1,63 @@
+\input texinfo
+@setfilename internals.texinfo
+@settitle Blockfort
+
+@copying
+Copyright @copyright{} 2007 Red Daly
+@end copying
+
+@titlepage
+@title Blockfort Internals
+
+@c The following two commands start the copyright page.
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@c Output the table of contents at the beginning.
+@contents
+
+@ifnottex
+
+@node Top
+@top Blockfort Internals
+@insertcopying
+@end ifnottex
+     
+@chapter Introduction
+This is a document that explains the implementation of Blockfort so
+that the system remains straightforward to understand.  I address
+issues of concurrency, I/O, fault tolerance, and other internal
+issues.
+
+@chapter Concurrency
+@section Concurrent Use of Lisp Streams
+The only way to use a single stream object concurrently is to get a
+lock on the stream while reading or writing.  This defeats the purpose
+of concurrency, at least in the synchronous case (reads).  The reason
+we need a lock is because of a progn of @code{file-position} and
+@code{read-sequence} is not atomic.  Thread 1 may thus seek, context
+switch, and then thread 2 will then sweek, write, and Thread 1 will
+read/write to the wrong place.
+
+The solution is simple: open multiple files and let the disk figure
+out how to make writes sane.  To accomplish this feat we use one file
+handler per thread.  The garbage collector must close the file when
+the thead terminates.
+
+@section Thread-Local Information
+Most lisps provide thread-local dynamic bindings so that
+@code{*some-var*} may be bound to 1 in one thread and 2 in another
+thread.  However, storing an arbitrary value in thread-local bindings
+outside athread-encompassing @code{let} does not seem quite possible,
+so unless the whoever starts the thread ensures proper measures are
+taken for thread-local storage, we create a global hash table that
+maps a thread to another hash table that has thread-local info.
+
+Alternatively we can use the local binding mechanism in a thread to
+accomplish this, but we do not now do this and it only really applies
+to thread where we have some control over what gets bounds initially
+in the dynamic extent of the thread.
+
+@bye

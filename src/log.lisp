@@ -33,7 +33,6 @@ beginning START bytes from the first byte."
 	unsigned-value)))
 
 
-
 ;;;;; db-level api to undo-redo logging
 
 (defparameter *todo-output* *standard-output*)
