@@ -1,5 +1,5 @@
 (defpackage cl-blockfort
-  (:use :common-lisp)
+  (:use :common-lisp :alexandria)
   (:nicknames :blockfort :bfort)
   (:export
    ;; macros

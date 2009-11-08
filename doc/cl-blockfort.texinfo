@@ -79,7 +79,7 @@ concurrency control, and the interface between the two in Blockfort.
 @section Blocks
 @emph{Blocks} are the basic unit of data in Blockfort.  A block is a
 vector of contiguous (binary) data that persists after a computer
-turns off and on.  Note that a Blockfort block is disctinct from a
+turns off and on.  Note that a Blockfort block is distinct from a
 @emph{disk block}, though the two may correspond physically in certain
 cases. The interface to Blockfort does not assume anything about the
 structure of blocks or place any extra metadata into blocks when they
@@ -87,58 +87,141 @@ are stored on the disk.
 
 Each node in a distributed Blockfort environment has its own
 @emph{address space} in which blocks are allocated.  The units of an
-address spess are 8-bit bytes.
+address spess are 8-bit bytes.  A block in Blockfort is identified by
+its node and offset into its node's address space.  Replication at the
+block level is left up to the application.  Replication at the
+@emph{node} level may potentially be implemented by Blockfort in the
+future (i.e. replicating the entire address space of a node
+vs. replicating a single block).
 
-Blockfort maintains the block-store in a file, or multiple files, in a
-single directory on the disk and uses Common Lisp's routines to
-perform I/O operations.  In addition to the data file(s), there is
-also a small amount of metadata associated with each database that is
-stored in separate files in the directory.  These files store the
-version of the database and other transient information to protect the
-database from multiple processes. There are also transaction logs that
-take up a significant amount of space and are used to back up and
-recover the database.  Users do not need to know about the format of
-any of these files.
+@section Transactions
+In Blockfort, a @emph{transaction} is an protocol that wraps a set of
+@emph{actions} and guarantees atomicity, consistency, isolation, and
+durability.  Many different types and subtypes of transactions exist,
+and Blockfort attempts to abstract transactions enough to support many
+of the different types of transactions without overgeneralization.
 
-@section BTrees as an example
-A common implementation of BTrees is to allocate one 4 kilobyte block
-for each node in the tree.  An application that wishes to implement
-BTrees using Blockfort needs to serialize its in-memory representation
-of a node into a binary block of that size and then make a call to
-@code{persistent-alloc / persistent-write-sequence}.  The application
-would also need to deserialize the binary block it received from a
-call to @code{persistent-read-sequence}.
+@emph{Lock-based transactions.}  Nearly all concurrent database
+systems use locks to some degree to implement transactions, though how
+exactly the locking scheme works varies widely.  Two-phase locking
+(2PL) guarantees serializability of transactions by requiring that no
+lock may be acquired after a single lock has been released.  A tree
+protocol for locking requires far less contention for B-Trees by
+violating 2PL and allowing locks after unlocks.  In both of these
+cases, the locking scheme is pessimistic, acquiring locks as data is
+read and written, and releasing the locks either at the end of the
+transaction (2PL) or as nodes on the tree are traversed (tree
+protocol).
 
-@code{persistent-alloc} finds a contiguouse place in the block-store
-that can safely be written to without damaging any of the
-application's data.  No garbage collector is supplied, but the
-application controls the semantics of reads and writes on regions of
-the persistent vector, including which regions are reusable.
+@emph{Optimistic transactions.}  Optimistic transactions assume that
+data accesses will not conflict and checks these assumptions by
+performing an atomic validation step during commit.  Specific
+mechanisms in this league include timestamp methods and validation
+methods.  In many implementations of optimistic transactions, locks
+are still necessary but only during the commit phase.
 
-@code{persistent-write-sequence} is like Common Lisp's
-@code{write-sequence} except it operates on a persistent block-store.
-The same is true for @code{persistent-read-sequence}.
+@subsection Transaction Protocol
+Blockfort attempts to support many classes of transaction with a
+generic transaction protocol.  The basic principles of this protocol
+are as follows:
 
-Of course, this is not the full story.  The concurrency mechanism
-interacts with how blocks are read and written in the database
-extensively, and the BTree in the example must set up the store to
-handle its semantics.
+@enumerate
+@item
+A transaction begins with a call to the generic function
+@code{store-start-transaction}.
+
+@item
+While a transaction is active, actions may be performed on the
+database calling the generic function @code{(store-perform-action
+store transaction action)}.  
+@itemize
+@item Eager-locking transactions
+like 2PL and the tree-protocol will presumably acquire (and
+potentially release) locks as actions are performed.
+@item Optimistic transactions
+will presumably accumulate read and write objects that will require
+some form of validation during the commit phase of the transaction.
+@end itemize
+
+@item
+A transaction attempts to commit with a call to the generic function
+@code{store-commit-transaction}.
+
+@item
+A transaction aborts with a call to the generic function
+@code{store-rollback-transaction}.  As soon as such a call is made,
+the transaction is invalidated and any actions that took place during
+the transaction are undone.
+@end enumerate
+
+Using this protocol a single Blockfort data store may implement a wide
+range of possible transactions.  There are also some built-in
+transaction types, but these may be overruled entirely.
+
+@subsection Action protocol
+Actions are an abstraction of database operations like reads and
+writes.  They may also be more complex actions, such as ``atomic,
+conditional read/write'' that encapsulate more complex behavior.
+
+For example, an action as it is passed to @code{store-perform-action}
+may be an instance of the built-in class @code{read-block-action} or
+@code{write-block-action} which further decompose themselves and
+recursively call @code{store-perform-action}.
+
+The action protocol consists of two different components to ensure
+that a transaction can handle an action in an ACID-compliant manner:
+
+@enumerate
+@item Database updates.
+An action may need to update the database and thus needs to provide an
+implementation of the update procedure.  Often an action decomposes
+into primitive reads and writes.
+@item Log updates.
+An action needs to ensure that its database updates may be reversed
+and serialized into a log entry.
+@end enumerate
+
+@subsection Distributed Transactions
+Blockfort is a distributed database framework provides a protocol for
+communicating custom actions between nodes..  Blockfort uses two-phase
+commit (2PC) to perform resilient atomic transactions across many
+nodes.
+
+Two-phase commit is a protocol for performing some set of
+actions atomically over a number nodes.  There is a single coordinator
+of the distributed transaction that send a query to commit to all of
+the cohorts (who must also participate in the transaction).  Each
+cohort then attempts to fulfill its end of the bargain.  If a cohort
+fails, it will return NO to the coordinator; otherwise it will return
+YES and write something to its logs to ensure both that, even in the
+case of a crash, the cohort can commit the transaction, and also
+information to its logs to allow it to revert the partially-fulfilled
+transaction.  The coordinator received all of the YES/NO responses
+back, and if they are all YES it sends a COMMIT message to each
+cohort; otherwise it sends an ABORT.
+
+Actions performed during a transaction may correspond to physical
+operations at multiple nodes in the distributed system.  A message
+must be sent from one node to another to reques that particular
+actions be taken at the destination node.  Thus, for actions that do
+not decompose into primitive block read/write actions, the actions
+must be made to conform to a message-passing protocol.
+
+Blockfort does not specify a default protocol for communicating
+between nodes, though a default implementation is supplied for a
+TCP/IP-based communication layer.
+
+TODO what exactly is the specification for this?
 
 @section Concurrency control
 Blockfort currently allows concurrency at the level of a single lisp
 process.  That means that many threads in a single Common Lisp image
 can execute transactions simultaneously.
 
-Multiple processes/lisp images cannot use the same database at once,
-though adding that functionality is not a fundamental limitation.  It
-would simply require a communication layer for each concurrency
-scheme, and we view that an exercise in tedium.
+At present, there is a generic concurrency interface that should allow
+for a broad range of transaction implementations on top of Blockfort.
 
-At present, there is a generic concurrency interface and a lock-based
-implemenation with its own additional semantics.  In order to
-implement anything at present it is necessary to interface with the
-lock-based scheduler and supply information about the semantics of the
-locking scheme desired for various blocks.
+
 
 @subsection Lock-based concurrency of BTrees
 Btrees are a common, multipurpose data structure and Blockfort

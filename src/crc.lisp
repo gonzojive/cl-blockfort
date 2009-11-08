@@ -21,11 +21,6 @@
 
 (in-package :blockfort)
 
-(defmacro define-constant (name value &optional doc)
-  `(defconstant ,name (if (boundp ',name) (symbol-value ',name) ,value)
-     ,@(when doc (list doc))))
-
-
 (define-constant +crc-table+
   (make-array
    256
@@ -73,7 +68,8 @@
      #x40DF0B66 #x37D83BF0 #xA9BCAE53 #xDEBB9EC5 #x47B2CF7F #x30B5FFE9 
      #xBDBDF21C #xCABAC28A #x53B39330 #x24B4A3A6 #xBAD03605 #xCDD70693 
      #x54DE5729 #x23D967BF #xB3667A2E #xC4614AB8 #x5D681B02 #x2A6F2B94 
-     #xB40BBE37 #xC30C8EA1 #x5A05DF1B #x2D02EF8D)))
+     #xB40BBE37 #xC30C8EA1 #x5A05DF1B #x2D02EF8D))
+  :test 'equalp)
 
 (defun update-crc32 (crc buf)
   (declare (type (unsigned-byte 32) crc)

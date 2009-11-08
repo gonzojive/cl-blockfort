@@ -6,7 +6,7 @@
 ;;;;
 
 ;;;; Opening and closing the store
-(defgeneric store-open (store)
+(defgeneric store-open (store &key if-exists &allow-other-keys)
   (:documentation "Opens the store after it has initially been created"))
 
 (defgeneric store-close (store)
@@ -23,7 +23,7 @@
   (:documentation "Undoes the actions of the transaction"))
 
 ;;;; Locks
-(defgeneric store-acquire-locks-for-operation (store operation &key &allow-other-keys)
+(defgeneric store-acquire-locks-for-action (store operation &key &allow-other-keys)
   (:documentation "Acquires a set of locks on an element in the given
 data store, configurable by keyword options. "))
 
@@ -31,13 +31,12 @@ data store, configurable by keyword options. "))
   (:documentation "Releases the locks acquired early by the store."))
 
 ;;;; I/O on the elements in a data store
-(defgeneric store-perform-operation (store operation &key &allow-other-keys))
+(defgeneric store-perform-action (store transaction operation &key &allow-other-keys))
 
 (defgeneric store-perform-node-operation (store node operation &key &allow-other-keys)
   (:documentation "Performs some sort of operation on the given node
   in the data store. An example of an operation might be a READ or
   WRITE of a particular database element.  "))
-  
 
 (defgeneric store-read-sequence (store sequence &key store-start start end transaction &allow-other-keys)
   (:documentation "Destructively modifies SEQUENCE by replacing the
@@ -70,14 +69,6 @@ must be large enough to account for all the new bytes."))
     :initform nil :initarg :data-file
     :reader store-data-file
     :documentation "The file that stores all the data")
-   (if-exists
-    :initform :open
-    :initarg :if-exists
-    :type (member :open :superesede :error)
-    :reader store-if-exists
-    :documentation "What to do if the database exists already.  Can
-    either open the database, report an error, or overwrite the
-    database.")
    (transaction-log
     :initform nil :initarg :transaction-log
     :reader store-transaction-log :reader store-log
@@ -86,50 +77,99 @@ must be large enough to account for all the new bytes."))
   (:documentation "An ACID-compliant, concurrently accessible store
   that will persist across sessions."))
 
-(defmethod print-object ((store persistent-store) stream)
+(defmethod print-object ((store store) stream)
    (print-unreadable-object (store stream :type t :identity t)
      (prin1 (store-environment store)  stream)))
 
+;;;; Interface function
 (defun open-store (environment-dir &key (if-exists :open))
   (declare (type (member :open :supersede :error) if-exists))
-  (setf *store*
-    (make-instance 'persistent-store :store-environment environment-dir :if-exists if-exists)))
+  (let* ((store (make-instance 'store
+			       :store-environment environment-dir)))
+    (store-open store :if-exists if-exists)
+    (setf *store* store)))
 
+(defmethod store-open ((store store) &key if-exists &allow-other-keys)
+  (let ((file-if-exists (case if-exists
+			  (:open :overwrite)
+			  (:error :error)
+			  (:supersede :supersede))))
+    nil))
+
+;;;; Interface function
 (defun close-store (store)
   (store-close store))
 
 ;;; macros
 
-(defmacro with-transaction ((transaction-var store) &body body)
-  (let ((transaction-var transaction-var) ;(gensym "TRANSACTION"))
-	(store-var (gensym "STORE")))
-    `(let* ((,store-var ,store)
-	    (,transaction-var (begin-transaction ,store-var)))
-       (unwind-protect (progn ,@body)
-	 (commit-transaction ,transaction-var)))))
+(defmacro with-transaction ((transaction-var store)
+			    &body body)
+  `(let ((,transaction-var (store-begin-transaction ,store)))
+     (multiple-value-prog1 (progn ,@body)
+       (store-commit-transaction ,transaction-var))))
 
 (defmacro with-store-data-stream ((stream-var store) &body body)
   "Gets us access to the data stream for the store, performing any necessary locking."
   `(let ((,stream-var (binary-file-stream (store-data-file ,store))))
      ,@body))
 
+;;;; Minitransactions
+(defclass atomic-conditional-action ()
+  ((test-actions
+    :initarg :test-actions :initform nil
+    :accessor atomic-conditional-test-actions
+    :documentation "A list of actions that must succeed in order to subsequently 
+perform the success actions")
+   (success-actions
+    :initarg :success-actions :initform nil
+    :accessor atomic-conditional-success-actions
+    :documentation "A list of actions that execute when the test succeeds."))
+  (:documentation "Used to implement minitransactions, where a node in
+the store will atomically perform some test actions, if they all
+succeed, will then perform a set of success actions (independent reads
+and writes)."))
+
+(defmacro with-locks-for-store-action ((store action &key) &body body)
+  (once-only (store action)
+    (with-unique-names (locks)
+      `(let ((,locks (store-acquire-locks-for-action ,store ,action)))
+	 (unwind-protect (progn ,@body)
+	   (store-release-locks ,store ,locks))))))
+
+(defmethod store-perform-action :around ((store store) (action atomic-conditional-action) &key &allow-other-keys)
+  ;; TODO check for sound operation and rollback appropriately
+  (with-locks-for-store-action (store action)
+    (call-next-method)))
+
+(defmethod store-perform-action ((store store) (action atomic-conditional-action) &key &allow-other-keys)
+  (if (every (curry 'store-perform-action store)
+	     (atomic-conditional-test-actions action))
+      (progn
+	(dolist (success-action (atomic-conditional-success-actions action))
+	  (store-perform-action store success-action))
+	t)
+      nil))
+
+(defclass comparison-action ()
+  ((first-element
+    :initarg :first-element
+    :accessor comparison-first-element)
+   (second-element
+    :initarg :first-element
+    :accessor comparison-second-element)))
+
 ;;; implementation
-(defmethod initialize-instance :after ((store persistent-store) &rest args)
+(defmethod initialize-instance :after ((store store) &rest args)
   (declare (ignore args))
 
-  (let ((file-if-exists (case (store-if-exists store)
-			  (:open :overwrite)
-			  (:error :error)
-			  (:supersede :supersede))))
-    (setf (slot-value store 'data-file)
-	  (make-instance 'binary-file
-			 :path (merge-pathnames (store-environment store) "db-data")
-			 :if-exists file-if-exists))
+  (setf (slot-value store 'data-file)
+	(make-instance 'binary-file
+		       :path (merge-pathnames (store-environment store) "db-data")))
 
-    (setf (slot-value store 'transaction-log)
-	  (make-instance 'transaction-log
-			 :path (merge-pathnames (store-environment store) "db-log")
-			 :db store))))
+  (setf (slot-value store 'transaction-log)
+	(make-instance 'transaction-log
+		       :path (merge-pathnames (store-environment store) "db-log")
+		       :db store)))
 
 (defmethod store-close ((store persistent-store))
   (log-close (store-transaction-log store))

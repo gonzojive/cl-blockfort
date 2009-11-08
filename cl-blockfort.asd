@@ -12,15 +12,18 @@
 			:components
 			((:file "package")
 			 (:file "conditions" :depends-on ("package"))
-			 (:file "locks" :depends-on ("package"))
 			 (:file "crc" :depends-on ("package"))
-
-			 (:file "files" :depends-on ("package" "conditions"))
+			 (:file "files" :depends-on ("package" "conditions" "basic-threading"))
+			 ;; Concurrency
+			 (:file "basic-threading" :depends-on ("package"))
+			 (:file "local-locks" :depends-on ("package"))
+			 (:file "distributed-locks" :depends-on ("package"))
+			 ;; Logging
 			 (:file "log" :depends-on ("files" "package" "crc"))
-			 (:file "heap" :depends-on ("log"))
+			 (:file "store" :depends-on ("log" "files" "distributed-locks"))
 
 	       )))
-  :depends-on ("bordeaux-threads"))
+  :depends-on ("bordeaux-threads" "trivial-garbage" "alexandria"))
 
 (defsystem cl-blockfort-tests
   :components ((:module "test"
