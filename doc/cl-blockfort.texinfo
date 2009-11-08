@@ -26,10 +26,25 @@ Copyright @copyright{} 2007 Red Daly
 @end ifnottex
      
 @chapter Introduction
-Blockfort is a low-level transactional data store programmed in Common
-Lisp and intended for use by more abstract database systems.
-Blockfort guarantees ACID transactions, meaning the following
-properties of a transaction always hold:
+Blockfort is a low-level, distributed transactional data store
+programmed in Common Lisp and intended for use by more abstract
+database systems.  There are many forms of databases, from
+pointer-based object databases to simple B-Tree stores like Berekely
+DB to monstrous black boxes like Oracle's products.  Blockfort
+attempts to support a wide range of these high-level database
+abstractions and provide all the necessary primitives.
+
+Importantly, Blockfort is distributed database system that is intended
+to scale well to many database nodes.  Of course, blockfort supports
+single-node operation, but the ability to scale a system is important
+and so Blockfort acknowledges a possible distributed nature and
+provides the appropriate primitives for high-level paradigms to
+operate.
+
+Blockfort guarantees that certain behaviors are ACID compliant in its
+own sense and allows applications that call into Blockfort to
+guarantee ACID compliance in a way that makes sense for the
+application.  ACID transactions guarantee the following properties:
 
 @enumerate
 @item Atomicity
@@ -48,6 +63,11 @@ and they do not reflect intermediate changes made by each other.
 reflect its changes.
 @end enumerate
 
+Atomicity and Durability are almost exclusively the responsibility of
+Blockfort, while Isolation and Consistency rely on the interaction of
+the database client and Blockfort.  These interactions will become
+clearer later in this chapter.
+
 To accomplish ACID compliance, Blockfort relies on two basic
 principles: transaction logging for recovering from failures, and a
 concurrency scheduler for dealing with concurrently-executing
@@ -57,11 +77,17 @@ of its data should become clear after reading about blocks,
 concurrency control, and the interface between the two in Blockfort.
 
 @section Blocks
-Blocks are the basic unit of data in Blockfort, and the interface
-for dealing with them is raw and full of arithmetic.  A block is a
-vector of contiguous (binary) data, stored on disk as such.  The
-interface to Blockfort does not assume a page size or place any extra
-metadata into blocks when they are stored on the disk.
+@emph{Blocks} are the basic unit of data in Blockfort.  A block is a
+vector of contiguous (binary) data that persists after a computer
+turns off and on.  Note that a Blockfort block is disctinct from a
+@emph{disk block}, though the two may correspond physically in certain
+cases. The interface to Blockfort does not assume anything about the
+structure of blocks or place any extra metadata into blocks when they
+are stored on the disk.
+
+Each node in a distributed Blockfort environment has its own
+@emph{address space} in which blocks are allocated.  The units of an
+address spess are 8-bit bytes.
 
 Blockfort maintains the block-store in a file, or multiple files, in a
 single directory on the disk and uses Common Lisp's routines to
@@ -74,13 +100,14 @@ take up a significant amount of space and are used to back up and
 recover the database.  Users do not need to know about the format of
 any of these files.
 
+@section BTrees as an example
 A common implementation of BTrees is to allocate one 4 kilobyte block
-for each node in the tree.  An application that wished to implement
-BTrees using Blockfort would be required to serialize its in-memory
-representation of a node into a binary block of that size and then
-make a call to @code{persistent-alloc / persistent-write-sequence}.
-The application would also need to deserialize the binary block it
-received from a call to @code{persistent-read-sequence}.
+for each node in the tree.  An application that wishes to implement
+BTrees using Blockfort needs to serialize its in-memory representation
+of a node into a binary block of that size and then make a call to
+@code{persistent-alloc / persistent-write-sequence}.  The application
+would also need to deserialize the binary block it received from a
+call to @code{persistent-read-sequence}.
 
 @code{persistent-alloc} finds a contiguouse place in the block-store
 that can safely be written to without damaging any of the
