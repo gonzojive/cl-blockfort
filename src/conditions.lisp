@@ -6,6 +6,14 @@
 (define-condition blockfort-error (blockfort-condition error)
   ())
 
+(define-condition db-does-not-exist-error (blockfort-error) ())
+
+(define-condition log-condition (blockfort-condition) ())
+
+(define-condition log-error (blockfort-error) ())
+
+(define-condition log-does-not-exist-error (log-error) ())
+
 (define-condition heap-error (blockfort-error)
   ((heap :initarg :heap :initform nil :accessor condition-heap))
   (:report (lambda (condition stream)

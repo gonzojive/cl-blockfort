@@ -13,13 +13,13 @@
   (:documentation "Closes the store and all the log and data files associated with it."))
 
 ;;;; Abstract transactions on the store
-(defgeneric store-begin-transaction (store)
+(defgeneric store-begin-transaction (store transaction)
   (:documentation "Starts a transaction on the given store.  Returns a transaction."))
 
 (defgeneric store-commit-transaction (store transaction)
   (:documentation "Commits the provided transaction"))
 
-(defgeneric store-rollback-transaction (store transaction)
+(defgeneric store-abort-transaction (store transaction)
   (:documentation "Undoes the actions of the transaction"))
 
 ;;;; Locks
@@ -59,7 +59,6 @@ must be large enough to account for all the new bytes."))
 
 (defclass abstract-store () ())
 
-
 (defclass store (abstract-store)
   ((store-env-directory
     :initform nil :initarg :store-environment :type (or pathname string)
@@ -69,6 +68,11 @@ must be large enough to account for all the new bytes."))
     :initform nil :initarg :data-file
     :reader store-data-file
     :documentation "The file that stores all the data")
+   (metadata-path
+    :initform nil :initarg :metadata-path
+    :reader store-metadata-path
+    :documentation "The file that stores information about the data
+store, like counter numbers and the id the local node.")
    (transaction-log
     :initform nil :initarg :transaction-log
     :reader store-transaction-log :reader store-log
@@ -82,23 +86,29 @@ must be large enough to account for all the new bytes."))
      (prin1 (store-environment store)  stream)))
 
 ;;;; Interface function
-(defun open-store (environment-dir &key (if-exists :open))
-  (declare (type (member :open :supersede :error) if-exists))
-  (let* ((store (make-instance 'store
-			       :store-environment environment-dir)))
-    (store-open store :if-exists if-exists)
-    (setf *store* store)))
+(defun close-store (store)
+  (store-close store))
+
+;;;; Interface function
+(defun open-store (store-spec &rest store-open-args)
+  (destructuring-bind (store-class-designator environment-dir &rest store-initargs)
+      store-spec
+    (let* ((store (apply #'make-instance
+			 store-class-designator
+			 :store-environment environment-dir
+			 store-initargs)))
+      (apply 'store-open store store-open-args)
+      (setf *store* store))))
 
 (defmethod store-open ((store store) &key if-exists &allow-other-keys)
   (let ((file-if-exists (case if-exists
 			  (:open :overwrite)
 			  (:error :error)
 			  (:supersede :supersede))))
+    (log-open (store-log store) :if-exists if-exists)
+    
     nil))
 
-;;;; Interface function
-(defun close-store (store)
-  (store-close store))
 
 ;;; macros
 
@@ -113,54 +123,13 @@ must be large enough to account for all the new bytes."))
   `(let ((,stream-var (binary-file-stream (store-data-file ,store))))
      ,@body))
 
-;;;; Minitransactions
-(defclass atomic-conditional-action ()
-  ((test-actions
-    :initarg :test-actions :initform nil
-    :accessor atomic-conditional-test-actions
-    :documentation "A list of actions that must succeed in order to subsequently 
-perform the success actions")
-   (success-actions
-    :initarg :success-actions :initform nil
-    :accessor atomic-conditional-success-actions
-    :documentation "A list of actions that execute when the test succeeds."))
-  (:documentation "Used to implement minitransactions, where a node in
-the store will atomically perform some test actions, if they all
-succeed, will then perform a set of success actions (independent reads
-and writes)."))
-
-(defmacro with-locks-for-store-action ((store action &key) &body body)
-  (once-only (store action)
-    (with-unique-names (locks)
-      `(let ((,locks (store-acquire-locks-for-action ,store ,action)))
-	 (unwind-protect (progn ,@body)
-	   (store-release-locks ,store ,locks))))))
-
-(defmethod store-perform-action :around ((store store) (action atomic-conditional-action) &key &allow-other-keys)
-  ;; TODO check for sound operation and rollback appropriately
-  (with-locks-for-store-action (store action)
-    (call-next-method)))
-
-(defmethod store-perform-action ((store store) (action atomic-conditional-action) &key &allow-other-keys)
-  (if (every (curry 'store-perform-action store)
-	     (atomic-conditional-test-actions action))
-      (progn
-	(dolist (success-action (atomic-conditional-success-actions action))
-	  (store-perform-action store success-action))
-	t)
-      nil))
-
-(defclass comparison-action ()
-  ((first-element
-    :initarg :first-element
-    :accessor comparison-first-element)
-   (second-element
-    :initarg :first-element
-    :accessor comparison-second-element)))
 
 ;;; implementation
 (defmethod initialize-instance :after ((store store) &rest args)
   (declare (ignore args))
+
+  (setf (slot-value store 'metadata-path)
+	(merge-pathnames (store-environment store) "db-metadata"))
 
   (setf (slot-value store 'data-file)
 	(make-instance 'binary-file

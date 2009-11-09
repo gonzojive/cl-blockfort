@@ -19,11 +19,11 @@ use to access the binary file's contents."
 	(setf (gethash binary-file file->stream)
 	      (open-thread-local-stream binary-file :if-exists :overwrite)))))
 
-(defun open-thread-local-stream (binary-file &key if-exists if-does-not-exist)
+(defun open-thread-local-stream (binary-file &key if-exists if-does-not-exist (direction :io))
   "Opens a new stream in the current thread for the given binary file and sets up
 for garbage collection later in life."
   (let ((stream (open (binary-file-path binary-file)
-		      :direction :io
+		      :direction direction
 		      :element-type '(unsigned-byte 8)
 		      :if-exists if-exists
 		      :if-does-not-exist if-does-not-exist)))

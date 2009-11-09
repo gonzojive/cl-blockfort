@@ -1,5 +1,37 @@
 (in-package :cl-blockfort)
 
+;;;; Nodes
+(defclass store-node ()
+  ((store
+    :initarg :store :initform nil
+    :accessor node-store
+    :documentation "The store that owns this node.")
+   (node-id
+    :initarg :node-id :initform nil
+    :accessor node-id
+    :type (or null (unsigned-byte 16))
+    :documentation "Unique identifier for this node.  2-byte integer."))
+  (:documentation ""))
+
+(defclass local-node (store-node)
+  ())
+
+(defclass remote-node (store-node)
+  ())
+
+;;;; Messages
+(defclass message ()
+  ()
+  (:documentation "Represents a message sent from one part of the database to another,
+e.g. the ready and don't commit messages."))
+
+(defclass single-transaction-distributed-message (distributed-message)
+  ((transaction
+    :initarg :transaction :type message-transaction :accessor message-transaction
+    :documentation "The MESSAGE-TRANSACTION that corresponds to this distributed message."))
+  (:documentation "Represents a message sent from one part of the database to another,
+e.g. the ready and don't commit messages, that relate to a single transaction."))
+
 ;;; two-phase locking id described in chapter 19 of the complete databases book (pg 1024)
 ;;; Phase I:
 ;;;   1.  Coordinator places a log record <Prepare T> on the log at its site
@@ -20,37 +52,24 @@
 ;;; Phase II: Begins when `ready T'
 ;;;   1.  
 
-(defclass distributed-message ()
-  ()
-  (:documentation "Represents a message sent from one part of the database to another,
-e.g. the ready and don't commit messages."))
+;;;; Communication between nodes
+(defclass network ()
+  ((store
+    :initarg :store :initform nil
+    :accessor network-store
+    :documentation "The local store associated with this communication network."))
+  (:documentation "An abstract communication network between nodes.  A
+network is responsible for sending and receiving messages."))
 
-(defclass single-transaction-distributed-message (distributed-message)
-  ((transaction
-    :initarg :transaction :type message-transaction :accessor message-transaction
-    :documentation "The MESSAGE-TRANSACTION that corresponds to this distributed message."))
-  (:documentation "Represents a message sent from one part of the database to another,
-e.g. the ready and don't commit messages, that relate to a single transaction."))
+(defgeneric network-send-message (network message &key &allow-other-keys)
+  (:documentation "Sends the message over the channel."))
 
-(defclass distributed-log-entry (log-entry)
-  ()
-  (:documentation "All log entries that specifically relate to distributed transactions
-are subclasses of this class."))
+#+nil
+(defgeneric messaged-received-by-node (message node)
+  (:documentation "Called when a message was received by a particular node."))
 
-(defclass prepare-log-entry (distributed-log-entry single-transaction-log-entry)
-  ()
-  (:documentation "The coordinator of a distributed, two-phase commit writes
-a PREPARE entry to the log "))
-
-(defclass ready-log-entry (distributed-log-entry single-transaction-log-entry)
-  ()
-  (:documentation "The coordinator of a distributed, two-phase commit writes
-a READY entry to the log after Phase I of the two-phase commit."))
-
-(defclass do-not-commit-log-entry (distributed-log-entry single-transaction-log-entry)
-  ()
-  (:documentation "The coordinator of a distributed, two-phase commit writes
-a DON'T COMIT entry to the log after Phase I of the two-phase commit if it decides
-to abort the transaction."))
-
+(defclass tcp-network (network)
+  ((server-socket
+    :initform nil :initarg :server-socket
+    :accessor network-server-socket)))
 

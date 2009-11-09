@@ -14,16 +14,19 @@
 			 (:file "conditions" :depends-on ("package"))
 			 (:file "crc" :depends-on ("package"))
 			 (:file "files" :depends-on ("package" "conditions" "basic-threading"))
+			 ;; (abstract) network nodes
+			 ;; (:file "nodes")
 			 ;; Concurrency
 			 (:file "basic-threading" :depends-on ("package"))
 			 (:file "local-locks" :depends-on ("package"))
 			 (:file "distributed-locks" :depends-on ("package"))
 			 ;; Logging
-			 (:file "log" :depends-on ("files" "package" "crc"))
-			 (:file "store" :depends-on ("log" "files" "distributed-locks"))
+			 (:file "log" :depends-on ("files" "package" "crc" "basic-threading"))
+			 
+			 ;(:file "store" :depends-on ("log" "files" "distributed-locks"))
 
 	       )))
-  :depends-on ("bordeaux-threads" "trivial-garbage" "alexandria"))
+  :depends-on ("bordeaux-threads" "trivial-garbage" "alexandria" "usocket"))
 
 (defsystem cl-blockfort-tests
   :components ((:module "test"

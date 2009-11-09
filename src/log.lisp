@@ -1,40 +1,6 @@
 (in-package :blockfort)
 
-;;; utility
-(defun integer-to-octet-vector (octet-count integer)
-  "Given an integer and the number of bytes of desired output, returns a vector of lenghth
-BYTE-COUNT with a Little Endian integer in it."
-  (declare (optimize speed)
-	   (type integer integer)
-	   (type fixnum octet-count))
-  (let ((array (make-array octet-count :element-type '(unsigned-byte 8))))
-    (integer-into-octet-vector array octet-count integer)))
-
-(defun integer-into-octet-vector (octet-vector octet-count integer &key (start 0))
-  "Given an integer and a byte vector, inserts OCTET-COUNT bytes into OCTET-VECTOR
-beginning START bytes from the first byte."
-  (declare (type integer integer)
-	   (type fixnum octet-count start)
-	   (type (simple-array (unsigned-byte 8)) octet-vector)
-	   (optimize (speed 3)))
-  (dotimes (i octet-count)
-    (setf (elt octet-vector (+ i start))
-	  (ldb (byte 8 (* 8 i)) integer)))
-  octet-vector)
-
-(defun octet-vector-to-integer (vector &optional signed?)
-  "Given a byte vector in Little Endian form, returns a signed integer."
-  (let ((unsigned-value 0))
-    (dotimes (i (length vector))
-      (incf unsigned-value (ash (elt vector i) (* 8 i))))
-    (if (and signed?
-	     (>= unsigned-value (ash 1 (1- (* 8 (length vector))))))
-	(- unsigned-value (ash 1 (* 8 (length vector))))
-	unsigned-value)))
-
-
 ;;;;; db-level api to undo-redo logging
-
 (defparameter *todo-output* *standard-output*)
 
 (defun todo (format-control &rest format-args)
@@ -45,13 +11,6 @@ beginning START bytes from the first byte."
     :initarg :file
     :reader log-file
     :documentation "The binary file where the log is stored.")
-   (if-exists
-    :initform :open
-    :initarg :if-exists
-    :type (member :open :superesede :error)
-    :reader log-if-exists
-    :documentation "What to do if the log exists already.  Can either open the log,
-report an error, or replace the log.")
    (db
     :initarg :db
     :accessor log-db
@@ -62,23 +21,26 @@ TRANSACTION-LOG is thus block-store agnostic.")
    (unflushed-log-entries
     :initform nil
     :accessor unflushed-log-entries
-    :documentation "Entries that have not yet been flushed."))
+    :documentation "Entries that have not yet been flushed.")
+   (append-lock
+    :initarg :append-lock :initform (bordeaux-threads:make-lock)
+    :accessor log-append-lock
+    :documentation "Must be held to write to the log.")
+   (push-unflushed-log-entry-lock
+    :initform (bordeaux-threads:make-lock)
+    :accessor unflushed-log-entry-lock
+    :documentation "Must be held to push a log entry onto the queue of unflushed entries"))
    
   (:documentation "An undo-redo log for the transactional aspect of the persistent heap."))
-
-(defmethod initialize-instance :after ((log transaction-log) &key path)
-  (let ((file-if-exists (case (log-if-exists log)
-			  (:open :append)
-			  (:error :error)
-			  (:supersede :supersede))))
-    (todo "Check to make sure that the log is not corrupted when first opening.")
-
-    (setf (slot-value log 'log-file) 
-	  (make-instance 'binary-file :path path :if-exists file-if-exists))))
 
 ;;; generic implemented by the log manager
 ;; FLUSH (v.) means that pending log entries are written to disk
 ;; LOG (v.) means that log entries are added to the pending log entries to write to disk.
+(defgeneric log-open (transaction-log &key if-exists &allow-other-keys)
+  (:documentation "Opens the log file so that operations can be performed on it."))
+
+(defgeneric log-close (transaction-log)
+  (:documentation "Close all the associated log files."))
 
 (defgeneric log-begin-transaction (transaction-log transaction)
   (:documentation "Logs, but does not flush, the beginning of a transaction."))
@@ -87,7 +49,7 @@ TRANSACTION-LOG is thus block-store agnostic.")
   (:documentation "Logs, but does not flush, the commit of a transaction."))
 
 (defgeneric log-flush (transaction-log)
-  (:documentation "Guaranteed to flush the log to disk."))
+  (:documentation "Synchronous flush.  Guaranteed to flush the log to disk."))
 
 (defgeneric log-modification (transaction-log transaction database-element old-value new-value)
   (:documentation "Logs a modification to the database element."))
@@ -95,9 +57,6 @@ TRANSACTION-LOG is thus block-store agnostic.")
 (defgeneric log-recover (transaction-log database)
   (:documentation "Recovers the log to the last consistent state.  That is, it undoes all uncommited transactions
 and redoes all committed transactions."))
-
-(defgeneric log-close (transaction-log)
-  (:documentation "Close all the associated log files."))
 
 ;; generics implemented by the db, not the log manager
 (defgeneric db-redo-modification (database transaction-log modfication-log-entry)
@@ -173,6 +132,32 @@ it is flushed as soon as it appears in the log."))
   (:documentation "Corresponds to the abortion of a transaction.  When this has been
 written to a log, it means that the modifications in the corresponding transaction have
 been undone."))
+
+
+(defclass distributed-log-entry (log-entry)
+  ()
+  (:documentation "All log entries that specifically relate to distributed transactions
+are subclasses of this class."))
+
+(defclass coordinator-log-entry (distributed-log-entry single-transaction-log-entry)
+  ()
+  (:documentation "A log entry only placed at the site of the coordinator."))
+
+(defclass prepare-log-entry (coordinator-log-entry)
+  ()
+  (:documentation "The coordinator of a distributed, two-phase commit writes
+a PREPARE entry to the log."))
+
+(defclass ready-log-entry (distributed-log-entry single-transaction-log-entry)
+  ()
+  (:documentation "The coordinator of a distributed, two-phase commit writes
+a READY entry to the log after Phase I of the two-phase commit."))
+
+(defclass do-not-commit-log-entry (distributed-log-entry single-transaction-log-entry)
+  ()
+  (:documentation "The coordinator of a distributed, two-phase commit writes
+a DON'T COMIT entry to the log after Phase I of the two-phase commit if it decides
+to abort the transaction."))
 
 (defclass begin-checkpoint-log-entry (log-entry)
   ((executing-transaction
@@ -366,36 +351,70 @@ before all else."
 ;  (:method  ((log transaction-log) (transaction-id integer))
 ;    (find transaction-id
 
+(defun queue-up-log-entry (log entry)
+  (bordeaux-threads:with-lock-held ((unflushed-log-entry-lock log))
+    (push entry (unflushed-log-entries log))))
 
 (defmethod log-begin-transaction ((log transaction-log) (transaction-id integer))
-  (push (make-instance 'begin-transaction-log-entry
-		       :transaction (make-instance 'logged-transaction :transaction-id transaction-id)
-		       :transaction-log log)
-	(unflushed-log-entries log)))
+  (queue-up-log-entry
+   log
+   (make-instance 'begin-transaction-log-entry
+		  :transaction (make-instance 'logged-transaction :transaction-id transaction-id)
+		  :transaction-log log)))
 
 (defmethod log-commit-transaction ((log transaction-log) (transaction-id integer))
-  (push (make-instance 'commit-transaction-log-entry
-		       :transaction (make-instance 'logged-transaction :transaction-id transaction-id)
-		       :transaction-log log)
-	(unflushed-log-entries log)))
-
+  (queue-up-log-entry
+   log
+   (make-instance 'commit-transaction-log-entry
+		  :transaction (make-instance 'logged-transaction :transaction-id transaction-id)
+		  :transaction-log log)))
+	
 (defmethod log-modification ((log transaction-log) (transaction-id integer) db-element old-value new-value)
-  (push (make-instance 'modification-log-entry
-		       :transaction (make-instance 'logged-transaction :transaction-id transaction-id)
-		       :transaction-log log
-		       :database-element db-element
-		       :old-value old-value
-		       :new-value new-value)
-	(unflushed-log-entries log)))
+  (queue-up-log-entry
+   log
+   (make-instance 'modification-log-entry
+		  :transaction (make-instance 'logged-transaction :transaction-id transaction-id)
+		  :transaction-log log
+		  :database-element db-element
+		  :old-value old-value
+		  :new-value new-value)))
 
 (defmethod log-flush ((log transaction-log))
-  (file-position (binary-file-stream (log-file log)) (file-length (binary-file-stream (log-file log))))
-  (dolist (log-entry (reverse (unflushed-log-entries log)))
-    (when (not (log-entry-flushed? log-entry))
-      (write-log-entry log-entry (binary-file-stream (log-file log)))
-      (finish-output (binary-file-stream (log-file log)))
-      (setf (log-entry-flushed? log-entry) t)))
-  (setf (unflushed-log-entries log) nil))
+  (bordeaux-threads:with-lock-held ((log-append-lock log))
+    (let ((log-stream (binary-file-stream (log-file log)))
+	  (unflushed-log-entries (bordeaux-threads:with-lock-held ((unflushed-log-entry-lock log))
+				   (unflushed-log-entries log))))
+      ;; We need to ensure the log entries are actually flushed before
+      ;; we clear out the queue.  There might be an error that prevents
+      ;; a particular log entry from being written to disk.  Imagine
+      ;; the race condition:
+      ;; 1. Thread A queues up a bunch of log entries
+      ;; 2. Thread B queues up a bunch of log entries and flushes half of them
+      ;;    and then we run out of disk space.  We throw an error in thread B
+      ;; 3.  Thread A calls log-flush and does not err.  Eek!
+      ;;
+      ;; To avoid this we have a flag for each entry that indicates whether it has been
+      ;; flushed yet, and we only set that after calling FINISH-OUTPUT successfully
+      ;; after writing the entry to the log.
+      ;; move to end of file so we can append
+      (file-position log-stream  (file-length log-stream))
+
+      ;; flush all the log entries
+      (let ((written-but-not-flushed nil))
+	(flet ((write-not-flushed ()
+		 (finish-output (binary-file-stream (log-file log)))
+		 (dolist (log-entry written-but-not-flushed)
+		   (setf (log-entry-flushed? log-entry) t))))
+	       ;; loop through the log entries and write but do not flush them to disk
+	  (unwind-protect
+	       (dolist (log-entry unflushed-log-entries)
+		 (when (not (log-entry-flushed? log-entry))
+		   (write-log-entry log-entry log-stream)
+		   (push log-entry written-but-not-flushed)))
+	    (write-not-flushed)
+	    (bordeaux-threads:with-lock-held ((unflushed-log-entry-lock log))
+	      (removef (unflushed-log-entries log) t :key #'log-entry-flushed?))))))))
+
 
 
 ;; A note on recovery form page 905 of Database Systems: The Complete Book:
@@ -450,6 +469,23 @@ before all else."
 					:transaction-log log)
 			 stream)))
     database))
+
+
+;;;; Log initialization, opening, and closing
+(defmethod initialize-instance :after ((log transaction-log) &key path &allow-other-keys) 
+  (setf (slot-value log 'log-file) (make-instance 'binary-file :path path)))
+
+(defmethod log-open ((log transaction-log) &key if-exists &allow-other-keys)
+  (let ((file-if-exists (case if-exists
+			  (:open :append)
+			  (:error :error)
+			  (:supersede :supersede))))
+    (todo "Check to make sure that the log is not corrupted when first opening.")
+    (when (and (member file-if-exists '(:append :overwrite))
+	       (not (open (binary-file-path (log-file log)) :direction :probe)))
+      (error 'log-does-not-exist-error))
     
+    ))
+
 (defmethod log-close ((log transaction-log))
   (close-file (log-file log)))
