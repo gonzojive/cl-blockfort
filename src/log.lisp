@@ -355,12 +355,15 @@ before all else."
   (bordeaux-threads:with-lock-held ((unflushed-log-entry-lock log))
     (push entry (unflushed-log-entries log))))
 
+(defmethod log-begin-transaction ((log transaction-log) (transaction logged-transaction))
+  (queue-up-log-entry log transaction))
+
 (defmethod log-begin-transaction ((log transaction-log) (transaction-id integer))
-  (queue-up-log-entry
-   log
-   (make-instance 'begin-transaction-log-entry
-		  :transaction (make-instance 'logged-transaction :transaction-id transaction-id)
-		  :transaction-log log)))
+  (let ((txn  (make-instance 'logged-transaction :transaction-id transaction-id)))
+    (log-begin-transaction log 
+			   (make-instance 'begin-transaction-log-entry
+					  :transaction txn
+					  :transaction-log log))))
 
 (defmethod log-commit-transaction ((log transaction-log) (transaction-id integer))
   (queue-up-log-entry
@@ -475,17 +478,13 @@ before all else."
 (defmethod initialize-instance :after ((log transaction-log) &key path &allow-other-keys) 
   (setf (slot-value log 'log-file) (make-instance 'binary-file :path path)))
 
-(defmethod log-open ((log transaction-log) &key if-exists &allow-other-keys)
-  (let ((file-if-exists (case if-exists
-			  (:open :append)
-			  (:error :error)
-			  (:supersede :supersede))))
-    (todo "Check to make sure that the log is not corrupted when first opening.")
-    (when (and (member file-if-exists '(:append :overwrite))
-	       (not (open (binary-file-path (log-file log)) :direction :probe)))
-      (error 'log-does-not-exist-error))
-    
-    ))
+(defmethod log-open ((log transaction-log) &key if-exists if-does-not-exist &allow-other-keys)
+  (todo "Check to make sure that the log is not corrupted when first opening.")
+  (with-open-file (s (log-file log)
+		     :direction :io
+		     :if-exists if-exists
+		     :if-does-not-exist if-does-not-exist))
+  log)
 
 (defmethod log-close ((log transaction-log))
-  (close-file (log-file log)))
+  (todo "Close the log file"))

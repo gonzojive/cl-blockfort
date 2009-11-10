@@ -1,24 +1,5 @@
 (in-package :cl-blockfort)
 
-;;;; Nodes
-(defclass store-node ()
-  ((store
-    :initarg :store :initform nil
-    :accessor node-store
-    :documentation "The store that owns this node.")
-   (node-id
-    :initarg :node-id :initform nil
-    :accessor node-id
-    :type (or null (unsigned-byte 16))
-    :documentation "Unique identifier for this node.  2-byte integer."))
-  (:documentation ""))
-
-(defclass local-node (store-node)
-  ())
-
-(defclass remote-node (store-node)
-  ())
-
 ;;;; Messages
 (defclass message ()
   ()
