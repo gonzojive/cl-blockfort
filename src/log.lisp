@@ -29,7 +29,10 @@ TRANSACTION-LOG is thus block-store agnostic.")
    (push-unflushed-log-entry-lock
     :initform (bordeaux-threads:make-lock)
     :accessor unflushed-log-entry-lock
-    :documentation "Must be held to push a log entry onto the queue of unflushed entries"))
+    :documentation "Must be held to push a log entry onto the queue of unflushed entries")))
+
+(defclass undo/redo-log (transaction-log)
+  ()
    
   (:documentation "An undo-redo log for the transactional aspect of the persistent heap."))
 
@@ -101,8 +104,14 @@ concurrently executing transaction."))
     :initarg :transaction :type logged-transaction :accessor log-entry-transaction
     :documentation "The LOGGED-TRANSACTION that corresponds to this log entry."))
   (:documentation "A log entry related to a single transaction"))
-  
+
+(defgeneric log-entry-transaction-id (log-entry)
+  (:documentation "Returns the log entry transaction ID associated with the log entry."))
+
 (defclass modification-log-entry (single-transaction-log-entry)
+  ())
+
+(defclass undo/redo-modification-log-entry (modification-log-entry)
   ((database-element
     :initarg :database-element :accessor log-entry-database-element
     :documentation "This log entry documents the writing of certain data to this database element.
@@ -238,10 +247,16 @@ are encoded in the field."
 (defparameter *integer-symbol-alist*
   '((1 . begin-transaction-log-entry)
     (2 . commit-transaction-log-entry)
-    (3 . begin-checkpoint-log-entry)
-    (4 . end-checkpoint-log-entry)
-    (5 . modification-log-entry)
-    (6 . abort-transaction-log-entry)))
+    (3 . undo/redo-modification-log-entry)
+    (4 . abort-transaction-log-entry)
+    ;; distributed transactions
+    (5 . prepare-log-entry)
+    (6 . ready-log-entry)
+    (7 . do-not-commit-log-entry)
+    ;; checkpointing
+    (8 . begin-checkpoint-log-entry)
+    (9 . end-checkpoint-log-entry)
+    ))
 
 (defconstant +symbol-integer-octet-count+ 4)
 (defconstant +transaction-id-octet-count+ 8)
@@ -326,7 +341,7 @@ before all else."
     log-entry))
 
 
-(defmethod read-log-entry :after ((log-entry modification-log-entry) binary-stream)
+(defmethod read-log-entry :after ((log-entry undo/redo-modification-log-entry) binary-stream)
 ;  (format t "   Modification Log Entry Read FPOS ~A FLEN ~A ~%" (file-position binary-stream) (file-length binary-stream))
   (flet ((read-valid-data-field ()
 	   (let ((data (read-binary-field-from-log-stream binary-stream)))
@@ -355,38 +370,30 @@ before all else."
   (bordeaux-threads:with-lock-held ((unflushed-log-entry-lock log))
     (push entry (unflushed-log-entries log))))
 
-(defmethod log-begin-transaction ((log transaction-log) (transaction logged-transaction))
-  (queue-up-log-entry log transaction))
+(defmethod log-begin-transaction ((log transaction-log) (txn logged-transaction))
+  (queue-up-log-entry log
+		      (make-instance 'begin-transaction-log-entry
+				     :transaction txn
+				     :transaction-log log)))
 
 (defmethod log-begin-transaction ((log transaction-log) (transaction-id integer))
   (let ((txn  (make-instance 'logged-transaction :transaction-id transaction-id)))
-    (log-begin-transaction log 
-			   (make-instance 'begin-transaction-log-entry
-					  :transaction txn
-					  :transaction-log log))))
+    (log-begin-transaction log txn)))
 
-(defmethod log-commit-transaction ((log transaction-log) (transaction-id integer))
+(defmethod log-commit-transaction ((log transaction-log) (txn logged-transaction))
   (queue-up-log-entry
    log
-   (make-instance 'commit-transaction-log-entry
-		  :transaction (make-instance 'logged-transaction :transaction-id transaction-id)
-		  :transaction-log log)))
+   (make-instance 'commit-transaction-log-entry :transaction txn :transaction-log log)))
 	
-(defmethod log-modification ((log transaction-log) (transaction-id integer) db-element old-value new-value)
-  (queue-up-log-entry
-   log
-   (make-instance 'modification-log-entry
-		  :transaction (make-instance 'logged-transaction :transaction-id transaction-id)
-		  :transaction-log log
-		  :database-element db-element
-		  :old-value old-value
-		  :new-value new-value)))
-
+(defmethod log-commit-transaction ((log transaction-log) (transaction-id integer))
+  (log-commit-transaction log (make-instance 'logged-transaction :transaction-id transaction-id)))
+	
 (defmethod log-flush ((log transaction-log))
   (bordeaux-threads:with-lock-held ((log-append-lock log))
     (let ((log-stream (binary-file-stream (log-file log)))
-	  (unflushed-log-entries (bordeaux-threads:with-lock-held ((unflushed-log-entry-lock log))
-				   (unflushed-log-entries log))))
+	  (unflushed-log-entries (reverse
+				  (bordeaux-threads:with-lock-held ((unflushed-log-entry-lock log))
+				    (unflushed-log-entries log)))))
       ;; We need to ensure the log entries are actually flushed before
       ;; we clear out the queue.  There might be an error that prevents
       ;; a particular log entry from being written to disk.  Imagine
@@ -419,59 +426,114 @@ before all else."
 	      (removef (unflushed-log-entries log) t :key #'log-entry-flushed?))))))))
 
 
+(defmethod log-modification ((log undo/redo-log) (transaction-id integer) db-element old-value new-value)
+  (queue-up-log-entry
+   log
+   (make-instance 'undo/redo-modification-log-entry
+		  :transaction (make-instance 'logged-transaction :transaction-id transaction-id)
+		  :transaction-log log
+		  :database-element db-element
+		  :old-value old-value
+		  :new-value new-value)))
+
+(defclass transaction-recovery-info ()
+  ((transaction-id
+    :initform nil :initarg :transaction-id
+    :accessor transaction-id)
+   (modifications
+    :initform nil :initarg :modifications
+    :accessor modifications
+    :documentation "Modifications, earliest last.")
+   (ready
+    :initform nil :initarg :ready
+    :accessor ready
+    :documentation "Was this TXN put into a ready state?")
+   (committed
+    :initform nil :initarg :committed
+    :accessor complete
+    :documentation "Was this TXN committed?"))))
+
+(defun log-maybe-redo-transactions (log database txns-earliest-first)
+  "Maybe redoes the earliest committed transaction recursively,
+returning the modified list of transactions that remain in the
+earliest-first list, order preserved."
+  (let ((popped? (when-let (earliest (first txns-earliest-first))
+		   (when (complete earliest)
+		     (dolist (modification-entry (reverse (modifications earliest)))
+		       (db-redo-modification database log modification-entry))
+		     t))))
+      (if (not popped?)
+	  txns-earliest-first
+	  (log-maybe-redo-transactions log database (rest txns-earliest-first)))))
 
 ;; A note on recovery form page 905 of Database Systems: The Complete Book:
 ;; The undo/redo recover policy is:
 ;; 1. Redo all the committed transactions in the order earliest-first, and
 ;; 2. undo all the incomplete transactions in the order latest-first
-(defmethod log-recover ((log transaction-log) database)
+(defmethod log-recover ((log undo/redo-log) database)
   ;; loop through each log record.  When a 'begin' log entry is found,
-  ;; push a transaction onto the stack.  coupled with that entry,
-  ;; push modification entries preserving their order
-  ;; when a commit is found, write redo all the modifications oldest to newest
-  ;; when the end of the log is found, look at the transaction stack
-  ;; and undo all the modifications newest to oldest
-  (let ((transaction-stack nil) ; alist of transaction id to list of modifications newest to oldest
+  ;; push a transaction onto the stack.  coupled with that entry, push
+  ;; modification entries preserving their order when a commit is
+  ;; found, write redo all the modifications oldest to newest when the
+  ;; end of the log is found, look at the transaction stack and undo
+  ;; all the modifications newest to oldest, unless a READY entry 
+  (let ((transactions nil) ; not yet redone/undone transaction infos, earlist-starting LAST
 	(stream (binary-file-stream (log-file log))))
+    (flet ((recovery-info (entry)
+	     (find (log-entry-transaction entry) transactions)))
     ;; seek to the beginning of the file
-    (file-position stream 0)
-    (loop :for entry = (log-read-log-entry log stream)
-       :when (null entry)
-       :return nil
-       :do
-       (typecase entry
-	 (begin-transaction-log-entry
-	  (push (cons (transaction-id (log-entry-transaction entry)) nil) transaction-stack))
-;	  (format t "Begin TXN ~A. new stack ~A~%"
-;		  (transaction-id (log-entry-transaction entry)) transaction-stack))
-	 (modification-log-entry
-	  ;; modification stack is newest first
-	  (push entry
-		(cdr (assoc (transaction-id (log-entry-transaction entry)) transaction-stack))))
-	 (abort-transaction-log-entry
-	  (setf transaction-stack
-		(remove (transaction-id (log-entry-transaction entry)) transaction-stack :key #'car)))
-	 (commit-transaction-log-entry
-	  (let ((modification-entries
-		 (cdr (assoc (transaction-id (log-entry-transaction entry)) transaction-stack))))
-	    (dolist (modification-entry (nreverse modification-entries))
-	      (db-redo-modification database log modification-entry))
-	    (setf transaction-stack
-		  (remove (transaction-id (log-entry-transaction entry)) transaction-stack :key #'car))))))
-;	    (format t "Committed TXN ~A. New stack ~A~%"
-;		  (transaction-id (log-entry-transaction entry)) transaction-stack)))))
-    (let ((undone-transactions 0))
-      (dolist (uncommitted-transaction transaction-stack)
-	(incf undone-transactions)
-	(dolist (modification-entry (cdr uncommitted-transaction))
-	  (db-undo-modification database log modification-entry))
-	(file-position stream (file-length stream))
-	(write-log-entry (make-instance 'abort-transaction-log-entry
-					:transaction (make-instance 'logged-transaction
-								    :transaction-id (car uncommitted-transaction))
-					:transaction-log log)
-			 stream)))
-    database))
+      (file-position stream 0)
+      (loop :for entry = (log-read-log-entry log stream)
+	    :when (null entry)
+	    :return nil
+	    :do
+	    (typecase entry
+	      (begin-transaction-log-entry
+		 (push (make-instance 'transaction-recovery-info
+				      :transaction-id (transaction-id (log-entry-transaction entry)))
+		       transactions))
+					;(format t "Begin TXN ~A. new stack ~A~%"
+					;(transaction-id (log-entry-transaction entry)) transaction-stack))
+	      (commit-transaction-log-entry
+		 (setf (complete  (recovery-info entry)) t)
+		 (setf transactions
+		       (nreverse (log-maybe-redo-transactions log database (nreverse transactions)))))
+					;(format t "Committed TXN ~A. New stack ~A~%"
+					;(transaction-id (log-entry-transaction entry)) transaction-stack)))))
+	      
+	      (modification-log-entry
+		 ;; modification stack is earliest LAST
+		 (push entry (modifications (recovery-info entry))))
+
+	      (abort-transaction-log-entry
+		 ;; aborted transactions act as if they never happend
+		 ;; (we have already corrected for them)
+		 (removef transactions (recovery-info entry)))
+	 
+	      (ready-log-entry
+		 ;; set the ready flag for processing during
+		 ;; incomplete-txn processing phase
+		 (setf (ready (recovery-info entry)) t))
+
+	      (prepare-log-entry
+		 ;; ignored.  This is redundant with begin-transaction-log-entry.
+		 )))
+      (let ((undone-count 0))
+	(assert (every (complement #'complete) transactions))
+	(dolist (uncommitted-transaction transactions)
+	  (incf undone-count)
+	  ;; undo modifications, latest first
+	  (dolist (modification-entry (modifications uncommitted-transaction))
+	    (db-undo-modification database log modification-entry))
+	
+	  (bordeaux-threads:with-lock-held ((log-append-lock log))
+	    (file-position stream (file-length stream))
+	    (write-log-entry (make-instance 'abort-transaction-log-entry
+					    :transaction (make-instance 'logged-transaction
+									:transaction-id (car uncommitted-transaction))
+					    :transaction-log log)
+			     stream))))
+      database)))
 
 
 ;;;; Log initialization, opening, and closing
@@ -480,7 +542,7 @@ before all else."
 
 (defmethod log-open ((log transaction-log) &key if-exists if-does-not-exist &allow-other-keys)
   (todo "Check to make sure that the log is not corrupted when first opening.")
-  (with-open-file (s (log-file log)
+  (with-open-file (s (binary-file-path (log-file log))
 		     :direction :io
 		     :if-exists if-exists
 		     :if-does-not-exist if-does-not-exist))

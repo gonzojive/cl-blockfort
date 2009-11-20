@@ -15,13 +15,14 @@
 			 (:file "crc" :depends-on ("package"))
 			 (:file "files" :depends-on ("package" "conditions" "basic-threading"))
 			 ;; distributed network nodes
-			 (:file "network" :depends-on ("package" "conditions" "basic-threading"))
+			 (:file "network" :depends-on ("package" "conditions" "basic-threading" "serialize"))
 			 ;; Concurrency
 			 (:file "basic-threading" :depends-on ("package"))
 			 (:file "local-locks" :depends-on ("package"))
 			 (:file "distributed-locks" :depends-on ("package" "network"))
 			 ;; Logging
-			 (:file "log" :depends-on ("files" "package" "crc" "basic-threading"))
+			 (:file "serialize" :depends-on ("files" "package"))
+			 (:file "log" :depends-on ("files" "package" "crc" "basic-threading" "serialize"))
 			 
 			 (:file "store" :depends-on ("log" "files" "network" "distributed-locks"))
 

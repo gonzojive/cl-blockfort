@@ -1,6 +1,6 @@
 (in-package :blockfort)
 
-(defparameter *store* nil)
+(defvar *store* nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Store Interface
@@ -10,7 +10,7 @@
 (defgeneric store-open (store &key if-exists if-does-not-exist &allow-other-keys)
   (:documentation "Opens the store after it has initially been
 created.  Valid values for IF-EXISTS are :overwrite, :error,
-and :supercede.  :supercede erases the old database, while :overwrite
+and :supersede.  :supersede erases the old database, while :overwrite
 opens it for IO.
 
 Valid values for IF-DOES-NOT-EXIST are :error and :create, defaulting to :create."))
@@ -42,6 +42,9 @@ data store, configurable by keyword options. "))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Transactions Interface
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgeneric store-default-transaction-class (store)
+  (:documentation "Returns the default class of transaction used by the store."))
 
 (defgeneric transaction-id (transaction)
   (:documentation "A globally unique transaction ID number.  This works globally by using
@@ -88,11 +91,16 @@ bytes at the end of the address space."))
 ;;;; Syntax Sugar
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro with-transaction ((transaction-var store)
+(defmacro with-transaction ((transaction-var store &key txn-class txn)
 			    &body body)
-  `(let ((,transaction-var (store-begin-transaction ,store)))
-     (multiple-value-prog1 (progn ,@body)
-       (store-commit-transaction ,transaction-var))))
+  (once-only (store)
+    `(let ((,transaction-var
+	    (or ,txn
+		(make-instance (or ,txn-class
+				   (store-default-transaction-class ,store))))))
+       (store-begin-transaction ,store ,transaction-var)
+       (multiple-value-prog1 (progn ,@body)
+	 (store-commit-transaction ,store ,transaction-var)))))
 
 (defmacro with-node-data-stream ((stream-var node) &body body)
   "Gets us access to the data stream for the store, performing any necessary locking."
@@ -182,12 +190,12 @@ keys and values."
 						   :path (merge-pathnames env "db-data"))))
 
     (setf (slot-value store 'transaction-log)
-	  (make-instance 'transaction-log
+	  (make-instance 'undo/redo-log
 			 :path (merge-pathnames env "db-log")
 			 :db store))))
 
 (defmethod store-open ((store store) &key (if-exists :overwrite) (if-does-not-exist :create) &allow-other-keys)
-  (declare (type (member :overwrite :error :supercede) if-exists)
+  (declare (type (member :overwrite :error :supersede) if-exists)
 	   (type (member :error :create) if-does-not-exist))
   (log-open (store-log store) :if-exists if-exists :if-does-not-exist if-does-not-exist)
   (node-open (store-local-node store) :if-exists if-exists :if-does-not-exist if-does-not-exist)
@@ -220,6 +228,9 @@ keys and values."
 (defmethod store-commit-transaction ((store store) transaction)
   (log-commit-transaction (store-log store) transaction)
   (log-flush (store-log store)))
+
+(defmethod store-default-transaction-class ((store store))
+  (find-class 'transaction))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Node Implementation
@@ -256,7 +267,7 @@ network (though for replicated cases it may be necessary)."))
 
 (defmethod node-open ((node local-node) &key if-exists if-does-not-exist &allow-other-keys)
   (declare (type (member :supersede :overwrite :error) if-exists)
-	   (type (member :create :error) if-exists))
+	   (type (member :create :error) if-does-not-exist))
   (let* ((data-path (binary-file-path (node-data-file node))))
     (with-open-file (s data-path
 		       :direction :io
@@ -278,7 +289,7 @@ network (though for replicated cases it may be necessary)."))
 
       ((or (and existsp       (eql :supersede if-exists))
 	   (and (not existsp) (eql :create if-does-not-exist)))
-       ;; create/supercede the file now (later we open it with :overwrite
+       ;; create/supersede the file now (later we open it with :overwrite
        (with-open-file (s data-path :direction :output :if-exists :supersede)))
 
       ((and existsp (eql :overwrite if-exists))

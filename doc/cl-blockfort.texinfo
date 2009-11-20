@@ -261,4 +261,76 @@ Logging allows the database to recover from a crash or aborted
 transaction.  Currently the logging scheme used by blockfort is
 undo-redo logging.
 
+@chapter Logging
+To ensure durability of transactions, Blockfort maintains a disk log
+that can recover the entire database using just the log files.
+
+@section Undo/Redo Log
+The log mechanism at the moment is an undo/redo log, which has the
+following logging rule: @emph{Before modifying any database element X
+on disk because of changes made by some transaction T, it is necessary
+that the update record appear on the disk}.  In addition, Blockfort
+enforces a strict commit rule: @emph{A commit record must be flushed
+to disk before the user is informed that a transaction committed}.
+The strict commit semantics are necessary for certain applications and
+not for others, but we employ it here.
+
+
+@subsection Undo/Redo Recovery
+The following is the algorithm used to recover the database from the
+log:
+
+
+
+@enumerate
+@item
+ Maintain a transaction stack (initially nil).
+
+@item
+Loop through each log record.  Treat the log records according to
+their types:
+@enumerate
+@item <Begin, txn>.
+Push txn onto the transaction stack.  Set the ``ready'' and
+``distributed'' flags to false for the given transaction.
+@item <Commit, txn>.
+Set the committed flag to true for this transaction.  If it is the
+earliest on the transaction queue, redo all of its modifications
+earliest first.  Then pop it off the transaction queue and repeatedly
+inspect the transaction queue like that
+@item <Update, txn, ...>.
+Push the modification information onto the list of modification
+actions for the appropriate txn in the transaction stack.
+@item <Ready, txn>.
+Set the ready flag for the given transaction to true.
+@item <Prepare, txn>.
+This indicates the beginning of a distributed part of a transaction
+where the current site is the coordinator.  Set the distributed flag
+to true.
+@end enumerate
+
+@item 
+
+
+@end enumerate
+
+Atomicity and Durability are almost exclusively the responsibility of
+Blockfort, while Isolation and Consistency rely on the interaction of
+the database client and Blockfort.  These interactions will become
+clearer later in this chapter.
+
+@subsection Undo/Redo Checkpointing
+Not implemented yet.  We recover from the beginning of the log.
+
+@subsection Improvements
+Right now we have more disk writes than ideal: one for any
+modification, one for the modification in the log, and one for the
+commit.  The way we determine the previous value for the 'undo'
+portion of the log is to read from disk, requiring yet another I/O.
+To reduce disk I/Os we should delay flushing the database to file,
+allowing us to coalesce all the writes until commit time.  Buffering
+reads (or relying purely on Redo logging instead of undo logging)
+would also eliminate the need for the additional disk read before each
+modification.
+
 @bye
