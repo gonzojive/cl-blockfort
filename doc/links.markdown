@@ -1,6 +1,6 @@
 # List of papers
 
-"Consensus on Transaction Commit":http://research.microsoft.com/apps/pubs/default.aspx?id=64636
+[Consensus on Transaction Commit](http://research.microsoft.com/apps/pubs/default.aspx?id=64636)
 
 The distributed transaction commit problem requires reaching agreement
 on whether a transaction is committed or aborted. The classic
@@ -16,7 +16,7 @@ Phase Commit. The classic Two-Phase Commit algorithm is obtained as
 the special F = 0 case of the general Paxos Commit algorithm.
 
 
-"Sinfonia: A New Paradigm for BUilding Scalable Distributed Systems":http://www.google.com/url?sa=t&source=web&ct=res&cd=11&ved=0CDAQFjAK&url=http%3A%2F%2Fresearch.microsoft.com%2Fen-us%2Fpeople%2Faguilera%2Fsinfonia-tocs-to-appear2009.pdf&ei=t8YcS8jwBIqisgPl6uWRBw&usg=AFQjCNGX1WAWueqUL1fTs24YAaoA3rLZFA
+[Sinfonia: A New Paradigm for BUilding Scalable Distributed Systems](http://www.google.com/url?sa=t&source=web&ct=res&cd=11&ved=0CDAQFjAK&url=http%3A%2F%2Fresearch.microsoft.com%2Fen-us%2Fpeople%2Faguilera%2Fsinfonia-tocs-to-appear2009.pdf&ei=t8YcS8jwBIqisgPl6uWRBw&usg=AFQjCNGX1WAWueqUL1fTs24YAaoA3rLZFA)
 
 We propose a new paradigm for building scalable distributed
 systems. Our approach does not require dealing with message-passing
