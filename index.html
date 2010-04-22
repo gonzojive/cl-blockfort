@@ -1,86 +1,36 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-
-	<title>gonzojive/cl-blockfort @ GitHub</title>
-	
-	<style type="text/css">
-		body {
-  		margin-top: 1.0em;
-  		background-color: #c8708f;
-		  font-family: "Helvetica,Arial,FreeSans";
-  		color: #000000;
-    }
-    #container {
-      margin: 0 auto;
-      width: 700px;
-    }
-		h1 { font-size: 3.8em; color: #378f70; margin-bottom: 3px; }
-		h1 .small { font-size: 0.4em; }
-		h1 a { text-decoration: none }
-		h2 { font-size: 1.5em; color: #378f70; }
-    h3 { text-align: center; color: #378f70; }
-    a { color: #378f70; }
-    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
-    .download { float: right; }
-		pre { background: #000; color: #fff; padding: 15px;}
-    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
-    .footer { text-align:center; padding-top:30px; font-style: italic; }
-	</style>
-	
-</head>
-
-<body>
-  <a href="http://github.com/gonzojive/cl-blockfort"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
-
-  <div id="container">
-
-    <div class="download">
-      <a href="http://github.com/gonzojive/cl-blockfort/zipball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
-      <a href="http://github.com/gonzojive/cl-blockfort/tarball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
-    </div>
-
-    <h1><a href="http://github.com/gonzojive/cl-blockfort">cl-blockfort</a>
-      <span class="small">by <a href="http://github.com/gonzojive">gonzojive</a></span></h1>
-
-    <div class="description">
-      cl-blockfort provides an ACID-compliant persistent storage facility for blocks of binary data.  It is designed to be a low-level database layer on top of which more sophisticated databases may be implemented.
-    </div>
-
-    <p>blah blah!</p><h2>Dependencies</h2>
-<p>stuff</p>
-<h2>Install</h2>
-<p>to install, clone the git repository and use (asdf:operate 'asdf:load-op :cl-blockfort)</p>
-<h2>License</h2>
-<p>LGPL</p>
-<h2>Authors</h2>
-<p>Red Daly (reddaly@gmail.com)<br/><br/>      </p>
-<h2>Contact</h2>
-<p> (reddaly@gmail.com)<br/>      </p>
-
-
-    <h2>Download</h2>
-    <p>
-      You can download this project in either
-      <a href="http://github.com/gonzojive/cl-blockfort/zipball/master">zip</a> or
-      <a href="http://github.com/gonzojive/cl-blockfort/tarball/master">tar</a> formats.
-    </p>
-    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
-      by running:
-      <pre>$ git clone git://github.com/gonzojive/cl-blockfort</pre>
-    </p>
-
-    <div class="footer">
-      get the source code on GitHub : <a href="http://github.com/gonzojive/cl-blockfort">gonzojive/cl-blockfort</a>
-    </div>
-
-  </div>
-
-  
-</body>
-</html>
+<html><head><title>Blockfort | DocDown document</title><style type='text/css'>a {
+  text-decoration: none;
+  }
+a:hover {
+  text-decoration: underline;
+  }
+pre {
+  background-color: #ddeeff;
+  border: 1px solid #aaaaff;
+  padding: .5em;
+  margin-left: 2em;
+  }
+.symdoc {
+  margin-left: 3em;
+  }
+.asdf {
+  float: right;
+  clear: right;
+  margin: 1em .7em;
+  width: 18em;
+  background-color: #ddeeff;
+  border: 1px solid #aaaaff;
+  }
+.asdf p {
+  margin: .3em 0;
+  }
+.asdf small {
+  font-size: 80%;
+  }
+.asdf table {
+  font-size: 80%;
+  }
+.asdf table td {
+  vertical-align: text-top;
+  }
+</style></head><body><div class='asdf'><div><strong>cl-blockfort</strong><small>   [ASDF system]</small></div><p><em>An ACID-compliant, persistent, and eventually distributed heap.</em></p><table><tr><td><strong>Version:</strong></td><td>0.2.0</td></tr><tr><td><strong>License:</strong></td><td>LGPL</td></tr><tr><td><strong>Website:</strong></td><td><a href='http://github.com/gonzojive/cl-blockfort'>on github.com</a></td></tr><tr><td><strong>Author:</strong></td><td>Red Daly &lt;reddaly at gmail&gt;</td></tr><tr><td><strong>Dependencies:</strong></td><td>alexandria, anaphora, bordeaux-threads, trivial-garbage, usocket</td></tr></table></div><h1>Blockfort</h1><a name='index'></a><h4>Blockfort: an <a href="#acid">ACID</a>-compliant transactional database engine</h4><p>Blockfort is a low-level, distributed transactional data store programmed in Common Lisp and intended for use by more abstract database systems. </p><p>There are many forms of databases, from pointer-based object databases to simple B-Tree stores like Berekely DB to monstrous black boxes like Oracle's products.  Blockfort attempts to support a wide range of these high-level database abstractions and provide all the necessary primitives. </p><p>Importantly, Blockfort is distributed database system that is intended to scale well to many database nodes.  Of course, blockfort supports single-node operation, but the ability to scale a system is important and so Blockfort acknowledges a possible distributed nature and provides the appropriate primitives for high-level paradigms to operate. </p><h2>Contents</h2><ol><li><a href='#guide'>User Guide</a></li><ol><li><a href='#download'>Download and Installation</a></li><li><a href='#acid'>ACID</a></li><li><a href='#architecture'>System Architecture</a></li><ol><li><a href='#server'>Servers</a></li></ol></ol></ol><h2>User Guide</h2><a name='guide'></a><h3>Download and Installation</h3><a name='download'></a><p>All the code is maintained in a git repository.  To obtain the library, use the following command: </p><pre><code>git clone git://github.com/gonzojive/cl-blockfort.git </code></pre><p>You can also browse the code at <a href="http://github.com/gonzojive/cl-blockfort">http://github.com/gonzojive/cl-blockfort</a>. </p><h3>ACID</h3><a name='acid'></a><p>Blockfort guarantees that certain behaviors are ACID compliant in its own sense and allows applications that call into Blockfort to guarantee ACID compliance in a way that makes sense for the application.  ACID transactions guarantee the following properties: </p><ul><li><p><em>Atomicity</em> -- The transaction executes either all or none of its operations.</p></li><li><p><em>Consistency</em> -- The database is in a "consistent" state before and after the transaction executes. </p></li><li><p><em>Isolation</em> -- Concurrent transactions appear to be executing one after another, and they do not reflect intermediate changes made by each other. </p></li><li><em>Durability</em> -- After a transaction has successfully committed, the database will reflect its changes. </li></ul><h3>System Architecture</h3><a name='architecture'></a><p>To accomplish ACID compliance, Blockfort relies on two basic principles: <a href="#transactions">transaction logging</a> for <a href="#recovery">recovering</a> from failures, and a concurrency scheduler for dealing with concurrently-executing transactions.  How ACID compliance is achieved in light of the rather agnostic nature of Blockfort in regards to the higher-level structure of its data should become clear after reading about blocks, concurrency control, and the interface between the two in Blockfort. </p><p><img src="architecture.png" alt="System architecture diagram"></img> </p><p>The above diagram illustrates the basic architecture of a blockstore-based database system.  For each computer involved in conducting transactions on the database, there is a <a href="#server">server</a> object that </p><h4>Servers</h4><a name='server'></a><p>stuff </p></body></html>
