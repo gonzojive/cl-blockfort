@@ -3,7 +3,7 @@
 
 (in-package :org.iodb.cl-blockfort.system)
 
-(defsystem cl-blockfort
+(defsystem :cl-blockfort
   :description "An ACID-compliant, persistent, and eventually distributed heap."
   :version "0.2.0"
   :author "Red Daly <reddaly at gmail>"
@@ -27,7 +27,17 @@
 			 (:file "store" :depends-on ("log" "files" "network" "distributed-locks"))
 
 	       )))
-  :depends-on ("bordeaux-threads" "trivial-garbage" "alexandria" "usocket"))
+  :depends-on ("bordeaux-threads" "trivial-garbage" "alexandria" "usocket" "anaphora"))
+
+
+(defsystem :cl-blockfort-docs
+  :components ((:module "doc"
+                        :components
+                        ((:file "blockfort-docdown"))))
+  :depends-on ("docdown" "alexandria"))
+
+(setf (asdf:component-property (asdf:find-system :cl-blockfort) :website)
+      "http://github.com/gonzojive/cl-blockfort")
 
 (defsystem cl-blockfort-tests
   :components ((:module "test"

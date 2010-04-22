@@ -1,4 +1,15 @@
-(in-package :blockfort)
+(cl:defpackage :cl-transaction-log
+    (:nicknames :transaction-log :txn-log)
+  (:use :cl :alexandria :anaphora)
+  (:export #:transaction-log
+           #:undo/redo-log
+           #:log-open
+           #:log-close
+           #:log-begin-transaction
+           #:log-commit-transaction
+))
+
+(in-package :cl-transaction-log)
 
 ;;;;; db-level api to undo-redo logging
 (defparameter *todo-output* *standard-output*)
@@ -33,7 +44,6 @@ TRANSACTION-LOG is thus block-store agnostic.")
 
 (defclass undo/redo-log (transaction-log)
   ()
-   
   (:documentation "An undo-redo log for the transactional aspect of the persistent heap."))
 
 ;;; generic implemented by the log manager
