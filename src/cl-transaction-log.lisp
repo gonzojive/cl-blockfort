@@ -1,14 +1,3 @@
-(cl:defpackage :cl-transaction-log
-    (:nicknames :transaction-log :txn-log)
-  (:use :cl :alexandria :anaphora)
-  (:export #:transaction-log
-           #:undo/redo-log
-           #:log-open
-           #:log-close
-           #:log-begin-transaction
-           #:log-commit-transaction
-))
-
 (in-package :cl-transaction-log)
 
 ;;;;; db-level api to undo-redo logging
@@ -68,8 +57,9 @@ TRANSACTION-LOG is thus block-store agnostic.")
   (:documentation "Logs a modification to the database element."))
 
 (defgeneric log-recover (transaction-log database)
-  (:documentation "Recovers the log to the last consistent state.  That is, it undoes all uncommited transactions
-and redoes all committed transactions."))
+  (:documentation "Recovers the log to the last consistent state.
+That is, it undoes all uncommited transactions and redoes all
+committed transactions."))
 
 ;; generics implemented by the db, not the log manager
 (defgeneric db-redo-modification (database transaction-log modfication-log-entry)
@@ -87,6 +77,12 @@ and redoes all committed transactions."))
 (defgeneric db-value-as-octets (database value)
   (:documentation "This is called by the log manager when a MODIFICATION-LOG-ENTRY must be written
 to disk.  It is called with either the LOG-ENTRY-OLD-VALUE or LOG-ENTRY-NEW-VALUE of a 
+MODIFICATION-LOG-ENTRY."))
+
+(defgeneric db-value-from-octets (database value)
+  (:documentation "This is called by the log manager when a
+MODIFICATION-LOG-ENTRY must be read from disk.  It is called with
+either the LOG-ENTRY-OLD-VALUE or LOG-ENTRY-NEW-VALUE of a
 MODIFICATION-LOG-ENTRY."))
 
 ;;;; Log entries
@@ -209,9 +205,9 @@ are running."))
 byte count followed by the byte array."
   (declare (optimize debug))
   (let* ((length (length vector))
-	 (length-octets (integer-to-octet-vector +field-size-octet-count+ length))
+	 (length-octets (blockfort:integer-to-octet-vector +field-size-octet-count+ length))
 	 (crc (crc32 vector))
-	 (crc-octets (integer-to-octet-vector +checksum-octet-count+ crc)))
+	 (crc-octets (blockfort:integer-to-octet-vector +checksum-octet-count+ crc)))
     ;(format t "Writing field ~A ~A ~A~%" length vector crc-octets)
     (write-sequence length-octets log-stream)
     (write-sequence crc-octets log-stream)
@@ -227,10 +223,10 @@ are encoded in the field."
 	     (when (not (= byte-count bytes-read))
 	       (error "Expected to read ~A bytes but read ~A" byte-count bytes-read))
 	     (values seq bytes-read))))
-    (let* ((length (octet-vector-to-integer (read-vector +field-size-octet-count+)))
+    (let* ((length (blockfort:octet-vector-to-integer (read-vector +field-size-octet-count+)))
 	   (crc-octets (read-vector +checksum-octet-count+))
 	   (data (read-vector length))
-	   (crc (octet-vector-to-integer crc-octets))
+	   (crc (blockfort:octet-vector-to-integer crc-octets))
 	   (data-crc (crc32 data)))
       ;(format t "Read field ~A ~A ~A~%" length data crc-octets)
       (if (eql crc data-crc)
@@ -241,7 +237,7 @@ are encoded in the field."
 
 (defun write-integer-field-to-log-stream (integer octet-count log-stream)
   "Writes an integer of a certain size from the log stream."
-  (write-sequence (integer-to-octet-vector octet-count integer) log-stream))
+  (write-sequence (blockfort:integer-to-octet-vector octet-count integer) log-stream))
 
 (defun read-integer-field-from-log-stream (octet-count log-stream)
   "Reads an integer of a certain size from the log stream."
@@ -251,7 +247,7 @@ are encoded in the field."
 	     (when (not (= byte-count bytes-read))
 	       (error "Expected to read ~A bytes but read ~A" byte-count bytes-read))
 	     (values seq bytes-read))))
-    (octet-vector-to-integer (read-vector octet-count))))
+    (blockfort:octet-vector-to-integer (read-vector octet-count))))
 
 ;; so-called symbol integers are used to encode and decode symbols
 (defparameter *integer-symbol-alist*
@@ -352,22 +348,19 @@ before all else."
 
 
 (defmethod read-log-entry :after ((log-entry undo/redo-modification-log-entry) binary-stream)
-;  (format t "   Modification Log Entry Read FPOS ~A FLEN ~A ~%" (file-position binary-stream) (file-length binary-stream))
+  ;;  (format t "   Modification Log Entry Read FPOS ~A FLEN ~A ~%" (file-position binary-stream) (file-length binary-stream))
   (flet ((read-valid-data-field ()
 	   (let ((data (read-binary-field-from-log-stream binary-stream)))
 	     (assert data)
 	     data)))
-  (let ((db-element
-	 (db-element-from-octets
-	  (log-db (log-entry-transaction-log log-entry)) 
-	  (read-valid-data-field))))
-
-    (let ((old-value (read-valid-data-field))
-	  (new-value (read-valid-data-field)))
+    (let* ((db (log-db (log-entry-transaction-log log-entry)) )
+           (db-element (db-element-from-octets db (read-valid-data-field)))
+           (old-value (db-value-from-octets db  (read-valid-data-field)))
+           (new-value (db-value-from-octets db  (read-valid-data-field))))
 
       (setf (log-entry-database-element log-entry) db-element
-	    (log-entry-old-value log-entry) old-value
-	    (log-entry-new-value log-entry) new-value)))))
+            (log-entry-old-value log-entry) old-value
+            (log-entry-new-value log-entry) new-value))))
 
 ;; generic implemented by the log manager
 
@@ -397,10 +390,11 @@ before all else."
 	
 (defmethod log-commit-transaction ((log transaction-log) (transaction-id integer))
   (log-commit-transaction log (make-instance 'logged-transaction :transaction-id transaction-id)))
-	
+
+(declaim (optimize (debug 3)))	
 (defmethod log-flush ((log transaction-log))
   (bordeaux-threads:with-lock-held ((log-append-lock log))
-    (let ((log-stream (binary-file-stream (log-file log)))
+    (let ((log-stream (blockfort:binary-file-stream (log-file log)))
 	  (unflushed-log-entries (reverse
 				  (bordeaux-threads:with-lock-held ((unflushed-log-entry-lock log))
 				    (unflushed-log-entries log)))))
@@ -422,7 +416,7 @@ before all else."
       ;; flush all the log entries
       (let ((written-but-not-flushed nil))
 	(flet ((write-not-flushed ()
-		 (finish-output (binary-file-stream (log-file log)))
+		 (finish-output (blockfort:binary-file-stream (log-file log)))
 		 (dolist (log-entry written-but-not-flushed)
 		   (setf (log-entry-flushed? log-entry) t))))
 	       ;; loop through the log entries and write but do not flush them to disk
@@ -487,10 +481,11 @@ earliest-first list, order preserved."
   ;; found, write redo all the modifications oldest to newest when the
   ;; end of the log is found, look at the transaction stack and undo
   ;; all the modifications newest to oldest, unless a READY entry 
+  (declare (optimize (debug 3)))
   (let ((transactions nil) ; not yet redone/undone transaction infos, earlist-starting LAST
-	(stream (binary-file-stream (log-file log))))
+	(stream (blockfort:binary-file-stream (log-file log))))
     (flet ((recovery-info (entry)
-	     (find (log-entry-transaction entry) transactions)))
+	     (find (transaction-id (log-entry-transaction entry)) transactions :key #'transaction-id)))
     ;; seek to the beginning of the file
       (file-position stream 0)
       (loop :for entry = (log-read-log-entry log stream)
@@ -540,7 +535,7 @@ earliest-first list, order preserved."
 	    (file-position stream (file-length stream))
 	    (write-log-entry (make-instance 'abort-transaction-log-entry
 					    :transaction (make-instance 'logged-transaction
-									:transaction-id (car uncommitted-transaction))
+									:transaction-id (transaction-id uncommitted-transaction))
 					    :transaction-log log)
 			     stream))))
       database)))
@@ -548,11 +543,11 @@ earliest-first list, order preserved."
 
 ;;;; Log initialization, opening, and closing
 (defmethod initialize-instance :after ((log transaction-log) &key path &allow-other-keys) 
-  (setf (slot-value log 'log-file) (make-instance 'binary-file :path path)))
+  (setf (slot-value log 'log-file) (make-instance 'blockfort:binary-file :path path)))
 
 (defmethod log-open ((log transaction-log) &key if-exists if-does-not-exist &allow-other-keys)
   (todo "Check to make sure that the log is not corrupted when first opening.")
-  (with-open-file (s (binary-file-path (log-file log))
+  (with-open-file (s (blockfort:binary-file-path (log-file log))
 		     :direction :io
 		     :if-exists if-exists
 		     :if-does-not-exist if-does-not-exist))

@@ -12,12 +12,14 @@
 (defun binary-file-stream (binary-file)
   "Maps a binary file to an open stream that the current thread may
 use to access the binary file's contents."
-  (let ((file->stream (or (thread-local-binding file->stream)
+  (let* ((file->stream (or (thread-local-binding file->stream)
 			  (setf (thread-local-binding file->stream)
-				(make-hash-table)))))
-    (or (gethash binary-file file->stream)
-	(setf (gethash binary-file file->stream)
-	      (open-thread-local-stream binary-file :if-exists :overwrite)))))
+				(make-hash-table))))
+        (result (or (gethash binary-file file->stream)
+                    (setf (gethash binary-file file->stream)
+                          (open-thread-local-stream binary-file :if-exists :overwrite)))))
+;    (format t "REsult of binary-file-stream ~A: ~A~%" binary-file result)
+    result))
 
 (defun open-thread-local-stream (binary-file &key if-exists if-does-not-exist (direction :io))
   "Opens a new stream in the current thread for the given binary file and sets up

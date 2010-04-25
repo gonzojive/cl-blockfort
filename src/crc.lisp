@@ -19,7 +19,7 @@
       (format t "#x~8,'0x " c))))
 |#
 
-(in-package :blockfort)
+(in-package :cl-transaction-log)
 
 (define-constant +crc-table+
   (make-array

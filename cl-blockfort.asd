@@ -12,7 +12,6 @@
 			:components
 			((:file "package")
 			 (:file "conditions" :depends-on ("package"))
-			 (:file "crc" :depends-on ("package"))
 			 (:file "files" :depends-on ("package" "conditions" "basic-threading"))
 			 ;; distributed network nodes
 			 (:file "network" :depends-on ("package" "conditions" "basic-threading" "serialize"))
@@ -22,9 +21,10 @@
 			 (:file "distributed-locks" :depends-on ("package" "network"))
 			 ;; Logging
 			 (:file "serialize" :depends-on ("files" "package"))
-			 (:file "log" :depends-on ("files" "package" "crc" "basic-threading" "serialize"))
+			 (:file "crc" :depends-on ("package"))
+			 (:file "cl-transaction-log" :depends-on ("files" "package" "crc" "basic-threading" "serialize"))
 			 
-			 (:file "store" :depends-on ("log" "files" "network" "distributed-locks"))
+			 (:file "store" :depends-on ("cl-transaction-log" "files" "network" "distributed-locks"))
 
 	       )))
   :depends-on ("bordeaux-threads" "trivial-garbage" "alexandria" "usocket" "anaphora"))
@@ -39,7 +39,7 @@
 (setf (asdf:component-property (asdf:find-system :cl-blockfort) :website)
       "http://github.com/gonzojive/cl-blockfort")
 
-(defsystem cl-blockfort-tests
+(defsystem :cl-blockfort-tests
   :components ((:module "test"
                         :components ((:file "test-package")
 				     #+nil
@@ -47,4 +47,4 @@
 				     #+nil
 				     (:file "locks-tests" :depends-on ("test-package"))
 				     )))
-  :depends-on ("cl-blockfort" "stefil"))
+  :depends-on ("cl-blockfort" "hu.dwim.stefil"))
