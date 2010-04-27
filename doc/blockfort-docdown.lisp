@@ -3,6 +3,13 @@
 
 (in-package :blockfort.doc)
 
+
+(defun output-docs ()
+  (with-open-file (stream (asdf:system-relative-pathname (asdf:find-system :cl-blockfort)
+							 "www/index.html")
+			  :direction :output :if-exists :supersede)
+    (write-string (generate-html-page 'index) stream)))
+
 (progn
   (defdoc index :page
     (:title "Blockfort")
@@ -48,7 +55,7 @@ obtain the library, use the following command:
 
 You can also browse the code at [http://github.com/gonzojive/cl-blockfort](http://github.com/gonzojive/cl-blockfort).
 "))))
-     (defdoc guide :section
+     (defdoc concepts :section
        (:title "Concepts")
        (:content "")
        (:sections
@@ -171,28 +178,8 @@ block level is left up to the application.  Replication at the
 future (i.e. replicating the entire address space of a node
 vs. replicating a single block)."))
 
-           ))
+           ))))
 
-        (defdoc logging :section
-          (:title "Undo/Redo Logging")
-          (:content "To ensure durability of transactions, Blockfort
-maintains a disk log that can recover the entire database using just
-the log files.
-
-The log mechanism at the moment is an undo/redo log, which has the
-following logging rule:
-
->  **Logging Rule**: Before modifying any database element X on disk
->  because of changes made by some transaction T, it is necessary that
->  the update record appear on the disk.
-
-In addition, Blockfort enforces a strict commit rule:
-
->  **Commit Rule**: A commit record must be flushed to disk before the
->  user is informed that a transaction committed.
-
-The strict commit semantics are necessary for certain applications and
-not for others, but we employ it here."))
 
         #+nil
         (defdoc transaction-protocol :section
@@ -289,26 +276,108 @@ TODO what exactly is the specification for this?
 
 "))
 
+     (defdoc logging :section
+       (:title "Undo/Redo Logging")
+       (:content "To ensure durability of transactions, Blockfort
+maintains a disk log that can recover the entire database using just
+the log files.  The log is a separate package, CL-TRANSACTION-LOG,
+from the rest of blockfort to maintain modularity.  It works with an
+abstract idea of a database and only requires that a few functions be
+implemented and conventions be followed in order to make a database
+fully recoverable from a crash.")
+
+
+       (:sections
+        (defdoc logging-rule :section
+          (:title "Logging Rule")
+          (:content "The log mechanism at the moment is an undo/redo
+log, which has the following logging rule:
+
+>  **Logging Rule**: Before modifying any database element X on disk
+>  because of changes made by some transaction T, it is necessary that
+>  the update record appear on the disk.
+
+In addition, Blockfort enforces a strict commit rule:
+
+>  **Commit Rule**: A commit record must be flushed to disk before the
+>  user is informed that a transaction committed.
+
+The strict commit semantics are necessary for certain applications and
+not for others, but we employ it here.  They ensure that when a
+transaction commits, it will be recovered frm the log by a commit.
+
+
+
+"))
+        (defdoc logging-transactions :section
+          (:title "Logging transactions")
+          (:content "The most common actions performed on a log are
+actions that occur during database transactions.  The functions most
+important to this interaction are:
+
+1. [log-begin-transaction](#log-begin-transaction) -- begins a transaction
+2. [log-commit-transaction](#log-commit-transaction) -- commits a transaction
+3. [log-modification](log-modification) -- logs a modification to disk
+
+Note that for all of these functions, a transaction is assumed to be
+an integer.
+")
+          (:sections
+           (defdoc cl-transaction-log:log-begin-transaction :generic)
+           (defdoc cl-transaction-log:log-commit-transaction :generic)
+           (defdoc cl-transaction-log:log-modification :generic)))
+
+        (defdoc logging-recovery :section
+          (:title "Recovering a database from a log")
+          (:content "Recovering is easy!
+
+[log-recover](#log-recover) recovers a database from a log file.
+")
+          (:sections
+           (defdoc cl-transaction-log:log-recover :generic)))
+
+        (defdoc logging-implementation-protocol :section
+          (:title "Implementation Protocol")
+          (:content "The log of the system requires that a database
+system obey a minimal protocol in order to be recoverable.  A database
+must implement several methods in order to comply with the procol.  In
+addition, it must interact with the logger according to the protocol
+described so far (i.e. use the transaction methods appropriately).")
+
+          (:sections
+           (defdoc logging-implementation-protocol-methods :section
+             (:title "Methods that a database must implement")
+             (:content "The following methods are those that any database
+that wished to comply with the logging protocol must implement.")
+             (:sections
+
+              (defdoc cl-transaction-log:db-undo-modification :generic)
+              (defdoc cl-transaction-log:db-redo-modification :generic)
+           
+              (defdoc cl-transaction-log:db-element-as-octets :generic)
+              (defdoc cl-transaction-log:db-element-from-octets :generic)
+           
+              (defdoc cl-transaction-log:db-value-as-octets :generic)
+              (defdoc cl-transaction-log:db-value-from-octets :generic)
+
+              ))
+           (defdoc logging-implementation-protocol-mle :section
+             (:title "Log entries")
+             (:content "The non-drowsy reader will notice that the
+db-* functions take a modification-log-entry argument.  This is a
+instance of a log entry class that has the following important
+functions:")
+             (:sections
+              (defdoc cl-transaction-log:log-entry-database-element :generic)
+              (defdoc cl-transaction-log:log-entry-old-value :generic)
+              (defdoc cl-transaction-log:log-entry-new-value :generic)))))
+           
+))
 
            
         
-        ))
-     #+nil
-     (defdoc functions :section
-       (:title "Operations for querying Amazon.com")
-       (:content "The following methods make requests to ")
-       (:children
-	(defdoc amazon-ecs:multiplexed-batch-item-lookup :function)
-	(defdoc amazon-ecs:item-lookup :function)
-	(defdoc amazon-ecs:item-search :function)
-	(defdoc amazon-ecs:cart-create :function)
-	))))
+     ))
 
   (output-docs))
 
-(defun output-docs ()
-  (with-open-file (stream (asdf:system-relative-pathname (asdf:find-system :cl-blockfort)
-							 "www/index.html")
-			  :direction :output :if-exists :supersede)
-    (write-string (generate-html-page 'index) stream)))
    
