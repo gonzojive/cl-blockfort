@@ -368,9 +368,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.2014603"
+     inkscape:zoom="0.84956073"
      inkscape:cx="552.09659"
-     inkscape:cy="811.23663"
+     inkscape:cy="626.35893"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -387,7 +387,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -401,12 +401,18 @@
        width="77.12339"
        height="150.53021"
        x="74.020607"
-       y="70.668503" />
+       y="70.668503"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot3590"
        style="font-size:22px;font-style:normal;font-weight:normal;fill:#164c1f;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="translate(-13.131984,27.274119)"><flowRegion
+       transform="translate(-13.131984,27.274119)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion3592"><rect
            id="rect3594"
            width="77.781746"
@@ -427,7 +433,10 @@
          id="flowPara3724" /></flowRoot>    <flowRoot
        xml:space="preserve"
        id="flowRoot3726"
-       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"><flowRegion
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion3728"><rect
            id="rect3730"
            width="210.11172"
@@ -439,12 +448,18 @@
        style="fill:#ffffff;fill-opacity:1;stroke:#9f8bd2;stroke-width:3.18265653;stroke-miterlimit:4;stroke-opacity:1"
        d="m 86.819593,311.61001 c 24.875707,-16.40623 48.486387,-16.78857 70.741437,0 l 0,138.07383 c -20.78511,10.832 -43.02374,16.0317 -70.741437,0 l 0,-138.07383 z"
        id="rect2816-4"
-       sodipodi:nodetypes="ccccc" />
+       sodipodi:nodetypes="ccccc"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot3590-6"
        style="font-size:22px;font-style:normal;font-weight:normal;fill:#28164c;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="matrix(0.97151549,0,0,0.97151549,10.049865,260.78925)"><flowRegion
+       transform="matrix(0.97151549,0,0,0.97151549,10.049865,260.78925)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion3592-0"><rect
            id="rect3594-2"
            width="77.781746"
@@ -458,12 +473,18 @@
        width="47.518448"
        height="22.933413"
        x="63.404202"
-       y="846.11969" />
+       y="846.11969"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot3880"
        style="font-size:10px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="translate(-220.42448,377.4756)"><flowRegion
+       transform="translate(-220.42448,377.4756)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion3882"><rect
            id="rect3884"
            width="44.951794"
@@ -476,12 +497,18 @@
        width="85.862968"
        height="106.06602"
        x="45.926205"
-       y="906.91815" />
+       y="906.91815"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot3890"
        style="font-size:12px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="translate(-10.642334,294.98248)"><flowRegion
+       transform="translate(-10.642334,294.98248)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion3892"><rect
            id="rect3894"
            width="76.771591"
@@ -494,7 +521,10 @@
    id="flowSpan3898">Transaction</flowSpan> Log</flowPara></flowRoot>    <path
        style="fill:none;stroke:#000000;stroke-width:4.90000000000000036;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:0.41125542;stroke-miterlimit:4;stroke-dasharray:14.69999999999999929, 14.69999999999999929;stroke-dashoffset:0"
        d="m 2.3541577,736.90505 738.0284523,-2.35416 0,1.17708"
-       id="path3904" />
+       id="path3904"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <path
        sodipodi:type="star"
        style="fill:#ffffff;fill-opacity:1;stroke:#ff8c00;stroke-width:5.38899994;stroke-linecap:butt;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
@@ -510,24 +540,36 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 69.082596,674.4887 37.968224,-66.86627 38.92378,66.31459 -76.892004,0.55168 z"
-       transform="matrix(0.61064885,0,0,0.74459342,44.188046,185.88219)" />
+       transform="matrix(0.61064885,0,0,0.74459342,44.188046,185.88219)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <rect
        style="fill:#ffffff;fill-opacity:1;stroke:#c95555;stroke-width:4.69245815;stroke-linecap:butt;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
        id="rect4369"
        width="98.394089"
        height="102.49385"
        x="65.568146"
-       y="491.72437" />
+       y="491.72437"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <path
        style="fill:#ffffff;fill-opacity:1;stroke:#c95555;stroke-width:3.37432647;stroke-linecap:butt;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0"
        d="m 91.735905,506.07304 22.988755,-0.3369 22.94405,-0.0763 0,14.07126 -14.08436,-0.054 0,29.83629 -17.71937,0 0,-29.83629 -14.129075,-0.054 0,-13.5501 z"
        id="rect4366"
-       sodipodi:nodetypes="cccccccccc" />
+       sodipodi:nodetypes="cccccccccc"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot4371"
        style="font-size:10px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="matrix(1.3416411,0,0,1.3416411,-17.856642,-183.51281)"><flowRegion
+       transform="matrix(1.3416411,0,0,1.3416411,-17.856642,-183.51281)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion4373"><rect
            id="rect4375"
            width="85.926758"
@@ -538,7 +580,10 @@
        xml:space="preserve"
        id="flowRoot4379"
        style="font-size:10px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="translate(-4.7083155,8.2395521)"><flowRegion
+       transform="translate(-4.7083155,8.2395521)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion4381"><rect
            id="rect4383"
            width="49.437313"
@@ -554,30 +599,42 @@
        id="rect2816-5-4"
        width="222.59605"
        height="434.46524"
-       x="295.14191"
-       y="-26.738264" />
+       x="275.13156"
+       y="130.99031"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot3590-8-1"
-       style="font-size:22px;font-style:normal;font-weight:normal;fill:#164c1f;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans;text-anchor:middle;text-align:center"
-       transform="matrix(2.1198299,0,0,2.1198299,146.35365,-238.80921)"><flowRegion
+       style="font-size:22px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#164c1f;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       transform="matrix(2.1198299,0,0,2.1198299,126.34331,-81.080638)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion3592-7-2"><rect
            id="rect3594-0-2"
            width="99.995552"
            height="58.787037"
            x="71.952965"
            y="103.4363"
-           style="font-size:22px;fill:#164c1f;fill-opacity:1;text-anchor:middle;text-align:center" /></flowRegion><flowPara
+           style="font-size:22px;text-align:center;text-anchor:middle;fill:#164c1f;fill-opacity:1" /></flowRegion><flowPara
          id="flowPara3596-4-7">Local Server</flowPara></flowRoot>    <path
        style="fill:#ffffff;fill-opacity:1;stroke:#9f8bd2;stroke-width:5.38299561;stroke-miterlimit:4;stroke-opacity:1"
-       d="m 343.21823,129.39646 c 42.0736,-27.7487 82.0076,-28.39536 119.64876,0 l 0,233.53159 c -35.15495,18.32071 -72.76834,27.11526 -119.64876,0 l 0,-233.53159 z"
+       d="m 323.20789,287.12503 c 42.0736,-27.7487 82.0076,-28.39536 119.64876,0 l 0,233.53159 c -35.15495,18.32071 -72.76834,27.11526 -119.64876,0 l 0,-233.53159 z"
        id="rect2816-4-9-7"
-       sodipodi:nodetypes="ccccc" />
+       sodipodi:nodetypes="ccccc"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot3590-6-6-9"
        style="font-size:22px;font-style:normal;font-weight:normal;fill:#28164c;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="matrix(1.6431756,0,0,1.6431756,212.54123,-47.282289)"><flowRegion
+       transform="matrix(1.6431756,0,0,1.6431756,192.53089,110.44628)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion3592-0-1-1"><rect
            id="rect3594-2-0-4"
            width="77.781746"
@@ -590,13 +647,19 @@
        id="rect4369-1"
        width="98.394089"
        height="102.49385"
-       x="354.54102"
-       y="259.55557" />
+       x="334.53067"
+       y="417.28415"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <path
        style="fill:#ffffff;fill-opacity:1;stroke:#c95555;stroke-width:3.37432647;stroke-linecap:butt;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0"
-       d="m 380.70877,273.90424 22.98876,-0.3369 22.94405,-0.0763 0,14.07126 -14.08436,-0.054 0,29.83629 -17.71937,0 0,-29.83629 -14.12908,-0.054 0,-13.5501 z"
+       d="m 360.69843,431.63281 22.98876,-0.3369 22.94405,-0.0763 0,14.07126 -14.08436,-0.054 0,29.83629 -17.71937,0 0,-29.83629 -14.12908,-0.054 0,-13.5501 z"
        id="rect4366-4"
-       sodipodi:nodetypes="cccccccccc" />
+       sodipodi:nodetypes="cccccccccc"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <path
        sodipodi:type="star"
        style="fill:#ffffff;fill-opacity:1;stroke:#ff8c00;stroke-width:5.38899994;stroke-linecap:butt;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
@@ -612,7 +675,10 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 69.082596,674.4887 37.968224,-66.86627 38.92378,66.31459 -76.892004,0.55168 z"
-       transform="matrix(0.28245728,0,0,0.3444137,342.23098,118.49487)" />
+       transform="matrix(0.28245728,0,0,0.3444137,322.22064,276.22344)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <path
        sodipodi:type="star"
        style="fill:#ffffff;fill-opacity:1;stroke:#ff8c00;stroke-width:5.38899994;stroke-linecap:butt;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
@@ -628,7 +694,10 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 69.082596,674.4887 37.968224,-66.86627 38.92378,66.31459 -76.892004,0.55168 z"
-       transform="matrix(0.28245728,0,0,0.3444137,368.6575,119.44114)" />
+       transform="matrix(0.28245728,0,0,0.3444137,348.64716,277.16971)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <path
        sodipodi:type="star"
        style="fill:#ffffff;fill-opacity:1;stroke:#ff8c00;stroke-width:5.38899994;stroke-linecap:butt;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
@@ -644,19 +713,28 @@
        inkscape:rounded="0"
        inkscape:randomized="0"
        d="m 69.082596,674.4887 37.968224,-66.86627 38.92378,66.31459 -76.892004,0.55168 z"
-       transform="matrix(0.28245728,0,0,0.3444137,398.08447,118.26406)" />
+       transform="matrix(0.28245728,0,0,0.3444137,378.07413,275.99263)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <rect
        style="fill:#ffffff;fill-opacity:1;stroke:#8bd296;stroke-width:3.46978092;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        id="rect2816-5-3"
        width="77.12339"
        height="150.53021"
-       x="612.94629"
-       y="-2.4410782" />
+       x="592.93597"
+       y="155.28749"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot3590-8-3"
        style="font-size:22px;font-style:normal;font-weight:normal;fill:#164c1f;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="translate(529.00195,-100.26261)"><flowRegion
+       transform="translate(508.99161,57.465962)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion3592-7-3"><rect
            id="rect3594-0-7"
            width="77.781746"
@@ -666,14 +744,20 @@
            style="font-size:22px;fill:#164c1f;fill-opacity:1" /></flowRegion><flowPara
          id="flowPara3596-4-3">Server</flowPara></flowRoot>    <path
        style="fill:#ffffff;fill-opacity:1;stroke:#9f8bd2;stroke-width:1.86505938;stroke-miterlimit:4;stroke-opacity:1"
-       d="m 629.6034,51.6553 c 14.57734,-9.614159 28.41337,-9.838209 41.45499,0 l 0,80.91225 c -12.18022,6.34762 -25.21222,9.39469 -41.45499,0 l 0,-80.91225 z"
+       d="m 609.59306,209.38387 c 14.57734,-9.61416 28.41337,-9.83821 41.45499,0 l 0,80.91225 c -12.18022,6.34762 -25.21222,9.39469 -41.45499,0 l 0,-80.91225 z"
        id="rect2816-4-9-2"
-       sodipodi:nodetypes="ccccc" />
+       sodipodi:nodetypes="ccccc"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot3590-6-6-6"
        style="font-size:22px;font-style:normal;font-weight:normal;fill:#28164c;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="matrix(0.56931498,0,0,0.56931498,584.6158,21.873981)"><flowRegion
+       transform="matrix(0.56931498,0,0,0.56931498,564.60546,179.60255)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion3592-0-1-5"><rect
            id="rect3594-2-0-2"
            width="77.781746"
@@ -686,13 +770,19 @@
        id="rect2816-5-3-5"
        width="77.12339"
        height="150.53021"
-       x="783.35144"
-       y="-4.4504776" />
+       x="763.34113"
+       y="153.27809"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot3590-8-3-8"
        style="font-size:22px;font-style:normal;font-weight:normal;fill:#164c1f;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="translate(699.40713,-102.272)"><flowRegion
+       transform="translate(679.39679,55.456572)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion3592-7-3-7"><rect
            id="rect3594-0-7-9"
            width="77.781746"
@@ -702,14 +792,20 @@
            style="font-size:22px;fill:#164c1f;fill-opacity:1" /></flowRegion><flowPara
          id="flowPara3596-4-3-6">Server</flowPara></flowRoot>    <path
        style="fill:#ffffff;fill-opacity:1;stroke:#9f8bd2;stroke-width:1.86505938;stroke-miterlimit:4;stroke-opacity:1"
-       d="m 800.00858,49.6459 c 14.57734,-9.614156 28.41337,-9.838206 41.45499,0 l 0,80.91225 c -12.18022,6.34762 -25.21222,9.39469 -41.45499,0 l 0,-80.91225 z"
+       d="m 779.99824,207.37447 c 14.57734,-9.61415 28.41337,-9.8382 41.45499,0 l 0,80.91225 c -12.18022,6.34762 -25.21222,9.39469 -41.45499,0 l 0,-80.91225 z"
        id="rect2816-4-9-2-0"
-       sodipodi:nodetypes="ccccc" />
+       sodipodi:nodetypes="ccccc"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot3590-6-6-6-4"
        style="font-size:22px;font-style:normal;font-weight:normal;fill:#28164c;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="matrix(0.56931498,0,0,0.56931498,755.02098,19.864584)"><flowRegion
+       transform="matrix(0.56931498,0,0,0.56931498,735.01064,177.59316)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion3592-0-1-5-1"><rect
            id="rect3594-2-0-2-0"
            width="77.781746"
@@ -719,28 +815,43 @@
            style="font-size:22px;fill:#28164c;fill-opacity:1" /></flowRegion><flowPara
          id="flowPara3596-3-4-6-4">Store</flowPara></flowRoot>    <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:none;marker-end:none"
-       d="M 821.01586,126.08056 428.45672,343.7607"
+       d="M 801.00552,283.80913 408.44638,501.48927"
        id="path3020-2"
-       sodipodi:nodetypes="cc" />
+       sodipodi:nodetypes="cc"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:none;marker-end:none"
-       d="M 648.74493,130.09935 397.26412,346.11485"
+       d="M 628.73459,287.82792 377.25378,503.84342"
        id="path3020-2-7"
-       sodipodi:nodetypes="cc" />
+       sodipodi:nodetypes="cc"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:none;marker-end:none"
-       d="M 403.11065,385.27697 372.54547,343.7607"
+       d="M 383.10031,543.00554 352.53513,501.48927"
        id="path3020-2-7-7"
-       sodipodi:nodetypes="cc" />
+       sodipodi:nodetypes="cc"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1.29999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:5.2, 1.3;stroke-dashoffset:0;marker-start:url(#Arrow1Lstart);marker-end:url(#Arrow2Lend)"
-       d="m 523.20639,76.35527 78.86428,0"
-       id="path5238" />
+       d="m 503.19605,234.08384 78.86428,0"
+       id="path5238"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot5834"
        style="font-size:10px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="translate(13.329282,-41.179834)"><flowRegion
+       transform="translate(-6.6810592,116.54874)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion5836"><rect
            id="rect5838"
            width="81.151245"
@@ -751,7 +862,10 @@
        xml:space="preserve"
        id="flowRoot5842"
        style="font-size:10px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="matrix(0.8359611,-0.54878871,0.54878871,0.8359611,-15.083998,328.96107)"><flowRegion
+       transform="matrix(0.8359611,-0.54878871,0.54878871,0.8359611,-35.094339,486.68964)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion5844"><rect
            id="rect5846"
            width="231.95532"
@@ -762,7 +876,10 @@
        xml:space="preserve"
        id="flowRoot5842-6"
        style="font-size:10px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="matrix(0.99999031,-0.00440119,0.00440119,0.99999031,-174.58363,-26.502878)"><flowRegion
+       transform="matrix(0.99999031,-0.00440119,0.00440119,0.99999031,-194.59397,131.22569)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion5844-2"><rect
            id="rect5846-2"
            width="107.6945"
@@ -772,13 +889,19 @@
          style="text-align:center;text-anchor:middle"
          id="flowPara5931">transactions occur in the context of a store</flowPara></flowRoot>    <path
        style="fill:none;stroke:#000000;stroke-width:1.29999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:5.2, 1.3;stroke-dashoffset:0;marker-start:url(#Arrow1Lstart);marker-end:url(#Arrow2Lend)"
-       d="m 694.13626,78.13457 78.86428,0"
-       id="path5238-0" />
+       d="m 674.12592,235.86314 78.86428,0"
+       id="path5238-0"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot5834-0"
        style="font-size:10px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="translate(184.25915,-39.40054)"><flowRegion
+       transform="translate(164.24881,118.32803)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion5836-9"><rect
            id="rect5838-1"
            width="81.151245"
@@ -787,14 +910,20 @@
            y="96.025978" /></flowRegion><flowPara
          id="flowPara5840-2">communication</flowPara></flowRoot>    <path
        style="fill:none;stroke:#000000;stroke-width:1.29999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:5.2, 1.3;stroke-dashoffset:0;marker-start:url(#Arrow1Lstart);marker-end:url(#Arrow2Lend)"
-       d="M 524.33074,-6.3659863 777.14999,-7.1983067"
+       d="m 504.3204,151.36259 252.81925,-0.83232"
        id="path5238-0-6"
-       sodipodi:nodetypes="cc" />
+       sodipodi:nodetypes="cc"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot5834-0-1"
        style="font-size:10px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
-       transform="translate(115.99672,-119.73949)"><flowRegion
+       transform="translate(95.986379,37.989082)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion5836-9-8"><rect
            id="rect5838-1-5"
            width="81.151245"
@@ -811,10 +940,14 @@
            height="81.567406"
            x="486.90747"
            y="195.90443" /></flowRegion><flowPara
-         id="flowPara6034"></flowPara></flowRoot>    <flowRoot
+         id="flowPara6034" /></flowRoot>    <flowRoot
        xml:space="preserve"
        id="flowRoot6038"
-       style="font-size:10px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"><flowRegion
+       style="font-size:10px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+       transform="translate(-20.010341,157.72857)"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001"><flowRegion
          id="flowRegion6040"><rect
            id="rect6042"
            width="160.63785"
@@ -826,24 +959,36 @@
        id="rect4369-1-0"
        width="25.809593"
        height="26.884995"
-       x="635.73657"
-       y="103.80765" />
+       x="615.72626"
+       y="261.53622"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <path
        style="fill:#ffffff;fill-opacity:1;stroke:#c95555;stroke-width:0.88511407;stroke-linecap:butt;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0"
-       d="m 642.60057,107.57143 6.03015,-0.0884 6.01841,-0.02 0,3.69101 -3.69444,-0.0142 0,7.82631 -4.64794,0 0,-7.82631 -3.70618,-0.0142 0,-3.55431 z"
+       d="m 622.59023,265.3 6.03015,-0.0884 6.01841,-0.02 0,3.69101 -3.69444,-0.0142 0,7.82631 -4.64794,0 0,-7.82631 -3.70618,-0.0142 0,-3.55431 z"
        id="rect4366-4-8"
-       sodipodi:nodetypes="cccccccccc" />
+       sodipodi:nodetypes="cccccccccc"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <rect
        style="fill:#ffffff;fill-opacity:1;stroke:#c95555;stroke-width:1.23087108;stroke-linecap:butt;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:2.46174207, 1.23087104;stroke-dashoffset:0"
        id="rect4369-1-0-2"
        width="25.809593"
        height="26.884995"
-       x="806.09851"
-       y="100.89452" />
+       x="786.0882"
+       y="258.62311"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
     <path
        style="fill:#ffffff;fill-opacity:1;stroke:#c95555;stroke-width:0.88511407;stroke-linecap:butt;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0"
-       d="m 812.96253,104.65832 6.03015,-0.0884 6.01841,-0.02 0,3.69101 -3.69444,-0.0142 0,7.82631 -4.64794,0 0,-7.82631 -3.70618,-0.0142 0,-3.55431 z"
+       d="m 792.95219,262.38689 6.03015,-0.0884 6.01841,-0.02 0,3.69101 -3.69444,-0.0142 0,7.82631 -4.64794,0 0,-7.82631 -3.70618,-0.0142 0,-3.55431 z"
        id="rect4366-4-8-2"
-       sodipodi:nodetypes="cccccccccc" />
+       sodipodi:nodetypes="cccccccccc"
+       inkscape:export-filename="/git/cl-blockfort/doc/architecture.png"
+       inkscape:export-xdpi="76.970001"
+       inkscape:export-ydpi="76.970001" />
   </g>
 </svg>
